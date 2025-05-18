@@ -30,6 +30,7 @@ function Details({type,clicked,film,categorie}:{type: string,clicked: Film | TVS
     const [menuOpen, setMenuOpen] = useState(null);
     const[showMenu,setShowMenu]=useState(false);
     const[averageVote,setAverageVote]=useState<number>(null);
+    const[total,setTotalVote]=useState<number>(null);
 
     const handleRateClick = async () => {
   if (note !== null) {
@@ -170,29 +171,66 @@ const handleLike = async () => {
     },[clickedOne,typeClicked]);
 
     useEffect(()=>{
-      if(type==="movie"){
-       axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${clicked.id}&filters[media_type][$eq]=${type}&pagination[pageSize]=100`,{
+       axios.get(`https://tmdb-database-strapi.onrender.com/api/votes/average?id_media_type=${clicked.id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
         }).then((respo)=>{
             if(respo.data){
-                const votes = respo.data?.data ?? [];
-                if (votes.length > 0) {
-                  const total = votes.reduce((sum, vote) => sum + vote.vote, 0);
-                  const avg = total / votes.length;
-                  setAverageVote(avg);
-                } else {
-                  setAverageVote(null); // Aucun vote
-                }
+                const averageVote = respo.data.average;
+                setAverageVote(averageVote);
             }
         }).catch((err) => {
             console.error(`Erreur pour le genre ID ${clickedOne.genre_tv_films}:`, err);
         });
-      }else{
-        //meme chose pour les series
-      }
-    },[note,liked]);
+      
+    },[note]);
+
+    useEffect(()=>{
+        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${clicked.id}`,{
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }).then((respo)=>{
+            if(respo.data){
+                const totalVote = respo.data.meta.pagination.total;
+                setTotalVote(totalVote);
+            }
+        }).catch((err) => {
+            console.error(err);
+        });
+      
+    },[note]);
+
+    useEffect(()=>{
+      let url:string;
+        if(type==="movie"){
+            url=`https://tmdb-database-strapi.onrender.com/api/films/${clicked.id}`
+        }else{
+            url=`https://tmdb-database-strapi.onrender.com/api/Tv-shows/${clicked.id}`
+        }
+        axios.put(url,{
+            data: {
+                vote_average_website: averageVote,
+                vote_count_website: total,
+            }
+        }, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }).then((respo)=>{
+            if(respo.data){
+                console.log("Vote mis à jour avec succès");
+            }
+        }
+        ).catch((err) => {
+            console.error(`Erreur pour le genre ID ${clickedOne.genre_tv_films}:`, err);
+        }
+        )
+    },[averageVote,total]);
+
+
+
 
     useEffect(()=>{
         axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${clicked.id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`,{

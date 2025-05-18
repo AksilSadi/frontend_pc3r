@@ -92,21 +92,6 @@ function Acceuil(){
                             <FontAwesomeIcon icon={faHeart} className='text-lg w-5 text-white child' />
                             <li className='list-none ml-3 child text-base text-white child'>Favorites</li>
                          </div>
-                         <div className='mt-1 parent
-                        w-[182px] 
-                        relative
-                        flex
-                        items-center
-                        py-2 h-14
-                        rounded-2xl
-                        pl-3
-                        item
-                         '  onClick={()=>{
-                            setNomPage("Top");
-                         }}>
-                            <FontAwesomeIcon icon={faCrown} className='text-lg w-5 text-white child' />
-                            <li className='list-none ml-3 child text-base text-white child'>Top Rated</li>
-                         </div>
                          <div className='flex w-[182px] bottom-4 pl-3 items-center py-2 h-14 hover:bg-white rounded-2xl parent absolute retour' onClick={()=>{
                             Cookies.remove('user');
                             Cookies.remove('token');

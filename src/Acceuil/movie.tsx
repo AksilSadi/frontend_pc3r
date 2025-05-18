@@ -8,7 +8,7 @@ import { Card } from './card.tsx';
 import { Navigate } from "react-router";
 import Cookies from 'js-cookie';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faFilter } from '@fortawesome/free-solid-svg-icons'
+import { faFilter,faAngleDown } from '@fortawesome/free-solid-svg-icons'
 import Searched from './Searched.tsx';
 function Movie({refresh }: {refresh:boolean }) {
     const sections = [
@@ -22,6 +22,21 @@ function Movie({refresh }: {refresh:boolean }) {
         "Animation",
         "Drame"
         ];
+    const [reverse,setReverse]=useState(false);
+    const[reverse2,setReverse2]=useState(false);
+    const[reverse3,setReverse3]=useState(false);
+    const[annee,setAnnee]=useState("Année");
+    const[alphabetique,setAlphabetique]=useState("A-Z");
+    const[langue,setLangue]=useState("Langue");
+    const getAlphabetique = () => {
+        const alphabetique = ["A-Z","Z-A"];
+        return alphabetique;
+      }
+
+    const getYears = () => {
+        const Year = new Date().getFullYear() + 1;
+        return Array.from(new Array(10), (val, index) => `${Year - (index-1)}`);
+      }
     const [selectedSection, setSelectedSection] = useState("Tout");
     const [moviesBySection, setMoviesBySection] = useState<MoviesBySection>({});
     const [page, setPage] = useState(1);
@@ -29,9 +44,7 @@ function Movie({refresh }: {refresh:boolean }) {
     const [genreIdMap, setGenreIdMap] = useState<Record<string, number>>({});
     const [clickedOne,setClicked]=useState<Film>();
     const[typeClicked,setType]=useState("");
-    const [isAddingFilter, setIsAddingFilter] = useState(false);
     const totalPages = Math.ceil(moviesBySection[selectedSection]?.totalPages/16) || 1;
-    const [filters, setFilters] = useState<{ field: string; operator: string; value: string }[]>([]);
     const[searchTerm,setSearchTerm]=useState<string>();
     const [category,setCategory]=useState<string>();
 
@@ -39,6 +52,12 @@ function Movie({refresh }: {refresh:boolean }) {
         setSearchTerm(film);
         setCategory(categorie);
   };
+
+  useEffect(() => {
+  setAnnee("Année");
+  setAlphabetique("A-Z");
+  setLangue("Langue");
+}, [selectedSection]);
 
  useEffect(() => {
    const fetchGenres = async () => {
@@ -198,8 +217,61 @@ function Movie({refresh }: {refresh:boolean }) {
             </div>
 
         </div>
-        <div className='flex flex-col mt-2'>
-          <p className='font-bold text-white text-2xl'>Filtres</p>
+        <div className='flex flex-col mt-4'>
+          <div className='flex items-center'>
+            <p className='font-semibold text-gray-500 text-sm'>Filters:</p>
+            <div className='flex flex-wrap ml-2'>
+              <div className='drop relative bg-gray-800 ml-4 rounded-[20px] px-4 py-2' onClick={()=>{
+                    setReverse(!reverse);}}>
+                   <span className='text-white text-sm'>{annee}</span>
+                  <FontAwesomeIcon
+                      icon={faAngleDown}
+                      className={reverse ? 'icone rotate' : 'icone'} />
+                  <ul className='list -bottom-22 bg-gray-600' style={{display:reverse?'block':'none'}}>
+                    {getYears().map((year,index)=>{
+                    return(
+                        <li key={index} onClick={()=>{
+                            setAnnee(year);
+                        }} style={{borderLeft:annee==year?'3px solid #0029FF':undefined}}>{year}</li>
+                    )
+                    
+                   })}
+                  </ul>
+                </div>
+                <div className='drop relative bg-gray-800 ml-4 rounded-[20px] px-4 py-2' onClick={()=>{
+                    setReverse2(!reverse2);}}>
+                   <span className='text-white text-sm'>{alphabetique}</span>
+                  <FontAwesomeIcon
+                      icon={faAngleDown}
+                      className={reverse2 ? 'icone rotate' : 'icone'} />
+                  <ul className='list -bottom-22 bg-gray-600' style={{display:reverse2?'block':'none'}}>
+                    {getAlphabetique().map((alpha,index)=>{
+                    return(
+                        <li key={index} onClick={()=>{
+                            setAlphabetique(alpha);
+                        }} style={{borderLeft:alphabetique==alpha?'3px solid #0029FF':undefined}}>{alpha}</li>
+                    )
+                    
+                   })}
+                  </ul>
+                  </div>
+                <div className='drop relative bg-gray-800 ml-4 rounded-[20px] px-4 py-2' onClick={()=>{
+                    setReverse3(!reverse3);}}>
+                   <span className='text-white text-sm'>{langue}</span>
+                  <FontAwesomeIcon
+                      icon={faAngleDown}
+                      className={reverse3 ? 'icone rotate' : 'icone'} />
+                  <ul className='list -bottom-22 bg-gray-600' style={{display:reverse3?'block':'none'}}>
+                    <li onClick={()=>{
+                        setLangue("Français");
+                    }} style={{borderLeft:langue=="Français"?'3px solid #0029FF':undefined}}>Fr</li>
+                    <li onClick={()=>{
+                        setLangue("Fr");
+                    }} style={{borderLeft:langue=="En"?'3px solid #0029FF':undefined}}>En</li>
+                    </ul>
+                    </div>
+            </div>
+            </div>
           {/*ici je vais avec les div des filtre appliquer avec le croix */}
         </div>
         <div className='flex flex-wrap mt-4'>

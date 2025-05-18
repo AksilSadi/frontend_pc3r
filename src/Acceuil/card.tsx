@@ -1,6 +1,9 @@
 import {Film,TVShow} from '../constant.ts'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faStar,faComment,faHeart } from '@fortawesome/free-solid-svg-icons'
+import { use, useEffect,useState } from 'react';
+import axios from "axios";
+import Cookies from 'js-cookie';
 type FilmCardProps = {
   film: Film  | TVShow;
   commentCount: number;
@@ -9,7 +12,30 @@ type FilmCardProps = {
 };
 
 
-export const Card = ({ film, commentCount,type,onClick }: FilmCardProps) => (
+export const Card = ({ film, commentCount,type,onClick }: FilmCardProps) =>{
+  const [likes, setLikes] = useState(0);
+  const token=Cookies.get('token');
+  useEffect(() => {
+    const fetchLikes = async () => {
+      try {
+        const response = await axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${film.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if(response.data.data.length > 0) {
+        const likeCount = response.data.meta.pagination.total;
+        setLikes(likeCount);
+      }
+    }catch (error) {
+        console.error('Error fetching likes:', error);
+      }
+    };
+
+    fetchLikes();
+  }, [film]);
+
+  return(
   <div onClick={onClick} key={film.id} className="flex flex-col rounded-lg w-56 mr-6 px-2 py-2">
     <img
       src={`https://image.tmdb.org/t/p/w500${film.poster_path}`}
@@ -26,7 +52,7 @@ export const Card = ({ film, commentCount,type,onClick }: FilmCardProps) => (
         </div>
         <div className="flex mr-2">
           <FontAwesomeIcon icon={faHeart} className="text-lg w-3 text-red-600" />
-          <li className="list-none ml-1 text-base text-white text-[12px]">0</li>
+          <li className="list-none ml-1 text-base text-white text-[12px]">{`${likes}`}</li>
         </div>
         <div className="flex mr-2">
           <FontAwesomeIcon icon={faComment} className="text-lg w-3 text-white" />
@@ -40,3 +66,4 @@ export const Card = ({ film, commentCount,type,onClick }: FilmCardProps) => (
     </div>
   </div>
 );
+} 
