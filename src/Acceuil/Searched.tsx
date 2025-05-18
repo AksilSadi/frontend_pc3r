@@ -1,0 +1,152 @@
+
+import { useEffect, useState } from 'react';
+import axios from "axios";
+import {Film,CommentCount,TVShow,SectionMovies} from '../constant.ts'
+import { Card } from './card.tsx';
+import Cookies from 'js-cookie';
+import Details from './detailsmovie.tsx';
+function Searched({film, categorie}:{film: string, categorie: string}) {
+    const [searchedFilms, setSearchedFilms] = useState<SectionMovies>();
+    const [searchedTv, setSearchedTv] = useState<SectionMovies>();
+    const token = Cookies.get('token');
+    const [clickedOne, setClicked] = useState<Film | TVShow>();
+    const [typeClicked, setType] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const totalPages = categorie==="Film"?(searchedFilms?.totalPages || 1):(searchedTv?.totalPages || 1);
+    const currentData = categorie === "Film"
+        ? searchedFilms?.pages[currentPage] || []
+        : searchedTv?.pages[currentPage] || [];
+
+    useEffect(() => {
+        if (categorie === "Film") {
+            axios.get(`https://tmdb-database-strapi.onrender.com/api/films?filters[title][$contains]=${film}&pagination[page]=${currentPage}&pagination[pageSize]=12`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }).then((respo) => {
+                if (respo.data) {
+                    const { data, meta } = respo.data;
+                    const page = meta.pagination.page;
+
+                    setSearchedFilms((prev) => {
+                        const current = prev ?? { pages: {}, totalPages: 0 };
+                        return {
+                        pages: {
+                            ...current.pages,
+                            [page]: data,
+                        },
+                        totalPages: meta.pagination.pageCount,
+                        };
+                    });
+                }
+            }).catch((erreur) => {
+
+            })
+        } else if(categorie === "TV") {
+            axios.get(`https://tmdb-database-strapi.onrender.com/api/Tv-shows?filters[Name][$contains]=${film}&pagination[page]=${currentPage}&pagination[pageSize]=12`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }).then((respo) => {
+                if (respo.data) {
+                    const { data, meta } = respo.data;
+                    const page = meta.pagination.page;
+
+                    setSearchedTv((prev) => {
+                        const current = prev ?? { pages: {}, totalPages: 0 };
+                        return {
+                        pages: {
+                            ...current.pages,
+                            [page]: data,
+                        },
+                        totalPages: meta.pagination.pageCount,
+                        };
+                    });
+                }
+            }).catch((erreur) => {
+
+            })
+        }   
+    }, [film, categorie, currentPage]);
+
+    const getPaginationRange = (current: number, total: number) => {
+    const delta = 2; // Nombre de pages à afficher de chaque côté de la page actuelle
+    const range = [];
+    const rangeWithDots = [];
+    let l: number;
+
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+        range.push(i);
+      }
+    }
+
+    for (let i of range) {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l > 2) {
+          rangeWithDots.push("...");
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+
+    return rangeWithDots;
+  };
+  const paginationRange = getPaginationRange(currentPage, totalPages);
+
+  return (
+    <>
+    {clickedOne && typeClicked?
+            <Details type={typeClicked} clicked={clickedOne} film="" categorie="" />
+            :<div className='flex flex-col'>
+        <h1 className="text-2xl font-bold mb-4 mt-4 text-white">Résultats de recherche</h1>
+        <div className="grid grid-cols-4 gap-4">
+            {currentData.length === 0 ? (
+                <p className="text-center col-span-4 text-gray-400 text-lg">Aucun résultat trouvé.</p>
+                ) : (
+                currentData.map((item: Film | TVShow) => (
+                    <Card
+                    key={item.id}
+                    film={item}
+                    type={categorie === "Film" ? "movie" : "tv"}
+                    onClick={() => {
+                        setClicked(item);
+                        setType(categorie === "Film" ? "movie" : "tv");
+                    }}
+                    />
+                ))
+                )}
+        </div>
+        <div className="flex justify-center mt-4 pb-8">
+            {paginationRange.map((p, index) =>
+              p === "..." ? (
+                <span key={`dots-${index}`} className="px-2 py-2 text-gray-500">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  className={`px-4 py-2 mx-1 rounded-full text-sm ${
+                    currentPage === p
+                      ? "bg-white text-black font-semibold"
+                      : "bg-gray-800 text-white hover:bg-gray-700"
+                  }`}
+                  onClick={() => {
+                    setCurrentPage(p as number);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  {p}
+                </button>
+              )
+            )}
+        </div>
+    </div>}
+    </>
+    
+  );
+}
+export default Searched;
