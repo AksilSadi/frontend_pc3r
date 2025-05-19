@@ -39,7 +39,7 @@ function Tv({refresh }: {refresh:boolean }) {
 
     const getYears = () => {
         const Year = new Date().getFullYear() + 1;
-        return Array.from(new Array(10), (index) => `${Year - (index-1)}`);
+        return Array.from(new Array(10), (_,index) => `${Year - (index)}`);
       }
     const [selectedSection, setSelectedSection] = useState("Tout");
     const [moviesBySection, setMoviesBySection] = useState<MoviesBySection>({});
@@ -410,7 +410,7 @@ function Tv({refresh }: {refresh:boolean }) {
                   <FontAwesomeIcon
                       icon={faAngleDown}
                       className={reverse ? 'icone rotate' : 'icone'} />
-                  <ul className='list -bottom-22 bg-gray-600' style={{display:reverse?'block':'none'}}>
+                  <ul className='list -bottom-[416px] bg-gray-600' style={{display:reverse?'block':'none'}}>
                     {getYears().map((year,index)=>{
                     return(
                         <li key={index} onClick={()=>{

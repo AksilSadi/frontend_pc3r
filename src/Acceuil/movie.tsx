@@ -39,7 +39,7 @@ function Movie({refresh }: {refresh:boolean }) {
 
     const getYears = () => {
         const Year = new Date().getFullYear() + 1;
-        return Array.from(new Array(10), ( index) => `${Year - (index)}`);
+        return Array.from(new Array(10), ( _,index) => `${Year - (index)}`);
       }
     const [selectedSection, setSelectedSection] = useState("Tout");
     const [moviesBySection, setMoviesBySection] = useState<MoviesBySection>({});
