@@ -1,6 +1,6 @@
 import Details from './detailsmovie'
 import Header from './header.tsx';
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import './Acceuil.css'
 import axios from "axios";
 import {Film,CommentCount,TVShow,MoviesBySection} from '../constant.ts'
@@ -13,17 +13,18 @@ import Searched from './Searched.tsx';
 import DatePicker from "react-datepicker";
 import toast from 'react-hot-toast';
 import { useUser } from '../Context/UserContext';
-function Movie({refresh }: {refresh:boolean }) {
+function Tv({refresh }: {refresh:boolean }) {
     const sections = [
-        "Tout",             
-        "Populaires",      
-        "Nouveautés",      
-        "Action",
-        "Aventure",
+        "Tout",
+        "Populaires",
+        "Nouveautés",
         "Comédie",
-        "Science-fiction",
-        "Animation",
-        "Drame"
+        "Drame",
+        "Documentaire",
+        "Crime",
+        "Familial",
+        "Mystère",
+        "Animation"
         ];
     const [reverse,setReverse]=useState(false);
     const[reverse2,setReverse2]=useState(false);
@@ -59,50 +60,50 @@ function Movie({refresh }: {refresh:boolean }) {
     const[loading,setLoading]=useState(false);
     const[loadingFiltred,setLoadingFiltred]=useState(false);
     const [showProfile, setShowProfile] = useState(false);
-    const { user } = useUser();
-        const[nom,setNom]=useState(user.Nom_user);
-        const[prenom,setPrenom]=useState(user.Prenom_user);
-        const [dateNaissance, setDateNaissance] = useState<Date | null>(user.Date_naissance ? new Date(user.Date_naissance) : null);
-        const[email,setEmail]=useState(user.email_user);
-        const[password,setPassword]=useState('');
-        const { setUser } = useUser();
-
-        const handleclick=()=>{
-        const data = {
-            Nom_user: nom,
-            Prenom_user: prenom,
-            Date_naissance: dateNaissance,
-            email: email
-        };
-        axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user.id}`,data, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-        .then((response) => {
-            console.log(response.data);
-            toast.success("Modifications effectuées avec succès");
-            const pers = {
-                id: response.data.id,
-                Nom_user: response.data.Nom_user,
-                Prenom_user: response.data.Prenom_user,
-                Date_naissance: response.data.Date_naissance,
-                email_user: response.data.email_user,
-            }
-            Cookies.set('user', JSON.stringify(pers), { expires: 1/24, secure: true, sameSite: 'strict' });
-            setUser(pers);
-        })
-        .catch((error) => {
-            console.error(error);
-        }).finally(() => {
-            setShowProfile(false);
-            setNom(user.Nom_user);
-            setPrenom(user.Prenom_user);
-            setDateNaissance(user.Date_naissance ? new Date(user.Date_naissance) : null);
-            setEmail(user.email_user);
-            setPassword('');
-        });
-    }
+        const { user } = useUser();
+            const[nom,setNom]=useState(user.Nom_user);
+            const[prenom,setPrenom]=useState(user.Prenom_user);
+            const [dateNaissance, setDateNaissance] = useState<Date | null>(user.Date_naissance ? new Date(user.Date_naissance) : null);
+            const[email,setEmail]=useState(user.email_user);
+            const[password,setPassword]=useState('');
+            const { setUser } = useUser();
+    
+            const handleclick=()=>{
+            const data = {
+                Nom_user: nom,
+                Prenom_user: prenom,
+                Date_naissance: dateNaissance,
+                email: email
+            };
+            axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user.id}`,data, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            .then((response) => {
+                console.log(response.data);
+                toast.success("Modifications effectuées avec succès");
+                const pers = {
+                    id: response.data.id,
+                    Nom_user: response.data.Nom_user,
+                    Prenom_user: response.data.Prenom_user,
+                    Date_naissance: response.data.Date_naissance,
+                    email_user: response.data.email_user,
+                }
+                Cookies.set('user', JSON.stringify(pers), { expires: 1/24, secure: true, sameSite: 'strict' });
+                setUser(pers);
+            })
+            .catch((error) => {
+                console.error(error);
+            }).finally(() => {
+                setShowProfile(false);
+                setNom(user.Nom_user);
+                setPrenom(user.Prenom_user);
+                setDateNaissance(user.Date_naissance ? new Date(user.Date_naissance) : null);
+                setEmail(user.email_user);
+                setPassword('');
+            });
+        }
 
     const handleSearchedFilm = (film: string , categorie: string) => {
         setSearchTerm(film);
@@ -116,6 +117,13 @@ function Movie({refresh }: {refresh:boolean }) {
   setfiltreAppliquer(false);
   setPage(1);
 }, [selectedSection,refresh]);
+
+ useEffect(() => {
+  setPage(1);
+  setPageFiltred(1);
+}, [deletedFilter]);
+
+
 
  useEffect(() => {
    const fetchGenres = async () => {
@@ -146,14 +154,14 @@ function Movie({refresh }: {refresh:boolean }) {
     const fetchMovies = async () => {
       try {
         setLoadingFiltred(true);
-        let baseUrl = "https://tmdb-database-strapi.onrender.com/api/films";
+        let baseUrl = "https://tmdb-database-strapi.onrender.com/api/Tv-shows";
         const pagination = `pagination[page]=${pageFiltred}&pagination[pageSize]=15`;
           if (selectedSection === "Tout") {
             baseUrl += `?${pagination}`;
         } else if (selectedSection === "Populaires") {
             baseUrl += `?sort=popularity_tmdb:desc&${pagination}`;
         } else if (selectedSection === "Nouveautés") {
-            baseUrl += `?sort=release_date:desc&${pagination}`;
+            baseUrl += `?sort=first_air_date:desc&${pagination}`;
         } else {
             const genreId = genreIdMap[selectedSection];
             if (genreId !== undefined) {
@@ -162,10 +170,10 @@ function Movie({refresh }: {refresh:boolean }) {
         }
         if(annee!="Année"){
             const anneeNum = Number(annee);
-            baseUrl+=`&filters[release_date][$containsi]=${anneeNum}`;
+            baseUrl+=`&filters[first_air_date][$containsi]=${anneeNum}`;
         }
         if(alphabetique!="Alphabetique"){
-            baseUrl+=`&sort=title:${alphabetique=="A-Z"?"asc":"desc"}`;
+            baseUrl+=`&sort=Name:${alphabetique=="A-Z"?"asc":"desc"}`;
         }
         if (langue !== "Langue") {
           baseUrl += `&filters[original_language][$eq]=${langue.toLowerCase()}`;
@@ -201,7 +209,7 @@ function Movie({refresh }: {refresh:boolean }) {
     }
 
     try {
-      setLoading(true);
+    setLoading(true);  
     const url = getUrl(selectedSection, page);
     const response = await axios.get(url, {
     headers: { Authorization: `Bearer ${token}` }
@@ -227,11 +235,11 @@ function Movie({refresh }: {refresh:boolean }) {
       console.error("Erreur fetch movies:", error);
     }finally {
         setLoading(false);
-      }
+    }
   }
 
   const getUrl=(section:string,page:number):string=>{
-        const baseUrl = "https://tmdb-database-strapi.onrender.com/api/films";
+        const baseUrl = "https://tmdb-database-strapi.onrender.com/api/Tv-shows";
         const pagination = `pagination[page]=${page}&pagination[pageSize]=15`;
 
         if (section === "Tout") {
@@ -243,7 +251,7 @@ function Movie({refresh }: {refresh:boolean }) {
         }
 
         if (section === "Nouveautés") {
-            return `${baseUrl}?sort=release_date:desc&${pagination}`;
+            return `${baseUrl}?sort=first_air_date:desc&${pagination}`;
         }
 
         const genreId = genreIdMap[section];
@@ -485,14 +493,14 @@ function Movie({refresh }: {refresh:boolean }) {
             (filtreAppliquer ? moviesFiltred : moviesBySection[selectedSection]?.pages?.[page]) || []
           ).length > 0 ? (
             (filtreAppliquer ? moviesFiltred : moviesBySection[selectedSection]?.pages?.[page]).map(
-              (film: Film) => (
+              (film: TVShow) => (
                 <Card
                   key={film.id}
                   film={film}
-                  type="movie"
+                  type="TV"
                   onClick={() => {
                     setClicked(film);
-                    setType("movie");
+                    setType("TV");
                   }}
                 />
               )
@@ -500,7 +508,7 @@ function Movie({refresh }: {refresh:boolean }) {
           ) : (
             <p className="text-center text-gray-400 mt-4">Aucun résultat trouvé.</p>
           )}
-            </div>
+                  </div>
         <div className="flex justify-center mt-4 pb-8">
             {(filtreAppliquer ? filtredpaginationRange : paginationRange).map((p, index) =>
               p === "..." ? (
@@ -538,4 +546,4 @@ function Movie({refresh }: {refresh:boolean }) {
     
   );
 }
-export default Movie;
+export default Tv;

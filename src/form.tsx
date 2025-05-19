@@ -27,6 +27,7 @@ function Form({ isLogin }: FormProps) {
  const personne={email, password, rememberMe}
  const[navige,setNavige]=useState(false);
  const[erreur,setErreur]=useState(false);
+ const[loading,setLoading]=useState(false);
  const changer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const user={
@@ -40,12 +41,16 @@ function Form({ isLogin }: FormProps) {
         password:password
       }
       if(email && password){
+      setLoading(true);
         axios.post("https://tmdb-database-strapi.onrender.com/api/auth/local",personne).then((respo)=>{
       if(respo.data){
+        console.log(respo.data);
         const pers={
           id:respo.data.user.id,
           Nom_user:respo.data.user.Nom_user,
-          Prenom_user:respo.data.user.Prenom_user
+          Prenom_user:respo.data.user.Prenom_user,
+          email_user:respo.data.user.email,
+          Date_naissance:respo.data.user.Date_naissance,
         }
         Cookies.set('user', JSON.stringify(pers), { expires: rememberMe ? 1 : 1/24, secure: true, sameSite: 'strict' });
         Cookies.set('token', respo.data.jwt, { expires: rememberMe ? 1 : 1/24, secure: true, sameSite: 'strict' });
@@ -57,6 +62,8 @@ function Form({ isLogin }: FormProps) {
     }).catch((err)=>{
       setErreur(true);
       console.log(err)
+    }).finally(()=>{
+      setLoading(false);
     })
       }else{
         toast.error("vous remplir les deux champ")
@@ -71,6 +78,7 @@ function Form({ isLogin }: FormProps) {
         if(password.length<8){
           setErreurPass("mot de passe doit depasser 8 caracteres");
         }
+        setLoading(true);
           axios.post("https://tmdb-database-strapi.onrender.com/api/auth/local/register",user).then((respo)=>{
                       const idUser=respo.data.user.id;
                       const token=respo.data.jwt;
@@ -104,6 +112,8 @@ function Form({ isLogin }: FormProps) {
                         toast.error("Email est déjà utilisé");
                         setErreurEmail(true);
                       }
+                    }).finally(()=>{
+                      setLoading(false);
                     })
         }else{
           toast.error("tous les champs sont obligatoire");
@@ -116,6 +126,7 @@ function Form({ isLogin }: FormProps) {
 
     return (
       <>
+      
       {navige?<Navigate to="/Acceuil"  replace={true} />:null}
         {isLogin?<form className="flex flex-col  to-blue-500  sm:px-10 rounded-xl shadow-md kaka " style={{background: "linear-gradient(to bottom, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%)", backdropFilter: "blur(8px)"}} onSubmit={changer}>
             <p className="text-2xl sm:text-3xl  text-white font-semibold mt-8">Account Login</p>
@@ -149,7 +160,14 @@ function Form({ isLogin }: FormProps) {
             
             </div>
             
-            <button className=" text-white mt-12 px-2 py-2 rounded-lg boutton" style={{backgroundColor:"#0029FF"}}>Se connecter</button>
+            <button className=" text-white mt-12 px-2 py-2 rounded-lg boutton" style={{backgroundColor:"#0029FF"}}>{loading ? (
+        <>
+          <div className="w-4 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          Chargement...
+        </>
+      ) : (
+        "Se connecter"
+      )}</button>
         </form>:
         
         
@@ -183,25 +201,9 @@ function Form({ isLogin }: FormProps) {
                   setErreur(false)
                 }}></input>
             </div>
-            <div className="flex mt-2">
+            <div className="flex mt-2 w-[400px]">
             <div className="flex flex-col">
-            <label className=" text-white">Sexe</label>
-            <div className='drop mt-1 relative border-2 border-solid  border-white rounded-[10px] p-[8px]' onClick={()=>{
-            setReverse(!reverse);
-        }}>
-            <span className='text-gray-300'>{sexe}</span>
-            <FontAwesomeIcon
-             icon={faAngleDown}
-             className={reverse ? 'icone rotate' : 'icone'} />
-             <ul className='list -bottom-22' style={{display:reverse?'block':'none'}}>
-                <li onClick={()=>{
-                    setSexe("Homme");
-                }} style={{borderLeft:sexe=='Homme'?'3px solid #FFFFFF':undefined}}>Homme</li>
-                <li onClick={()=>{
-                    setSexe("Femme");
-                }} style={{borderLeft:sexe=='Femme'?'3px solid #FFFFFF':undefined}}>Femme</li>
-             </ul>
-        </div>
+            
             </div>
             <div className="flex flex-col ml-1">
             <label className=" text-white">Date de naissance</label>
@@ -227,7 +229,14 @@ function Form({ isLogin }: FormProps) {
             </div>:null}
 
             
-            <button className=" text-white mt-8 px-2 py-2 rounded-lg mb-8 boutton" style={{backgroundColor:"#0029FF"}}>Confirmer</button>
+            <button className=" text-white mt-8 px-2 py-2 rounded-lg mb-8 boutton" style={{backgroundColor:"#0029FF"}}>{loading ? (
+        <>
+          <div className="w-4 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          Chargement...
+        </>
+      ) : (
+        "Confirmer"
+      )}</button>
         </form>}
       </>
     )

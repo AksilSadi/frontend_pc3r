@@ -6,19 +6,20 @@ import axios from "axios";
 import Cookies from 'js-cookie';
 type FilmCardProps = {
   film: Film  | TVShow;
-  commentCount: number;
   type:string;
    onClick: () => void;
 };
 
 
-export const Card = ({ film, commentCount,type,onClick }: FilmCardProps) =>{
+export const Card = ({ film,type,onClick }: FilmCardProps) =>{
   const [likes, setLikes] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
   const token=Cookies.get('token');
   useEffect(() => {
     const fetchLikes = async () => {
       try {
-        const response = await axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${film.id}`, {
+        const id=type==='movie'?film.id_film:film.id_TvShow;
+        const response = await axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -33,6 +34,25 @@ export const Card = ({ film, commentCount,type,onClick }: FilmCardProps) =>{
     };
 
     fetchLikes();
+  }, [film]);
+
+  useEffect(() => {
+    const idfilm=film.id;
+    axios.get(
+            `https://tmdb-database-strapi.onrender.com/api/commentaires?filters[id_media_type][$eq]=${idfilm}&pagination[pageSize]=1`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+            }
+          ).then((respo) => {
+            if(respo.data){
+                setCommentCount(respo.data.meta.pagination.total);
+            }
+          }
+          ).catch((erreur)=>{
+            console.error('Error fetching comment count:', erreur);
+          }
+          )
   }, [film]);
 
   return(

@@ -9,13 +9,14 @@ import { Navigate } from "react-router";
 
 function Recommendation({ type, clicked, onRecommendationClick }: RecommendationProps) {
     const[recommendations,setRecommendations]=useState([]);
-    const [commentCounts, setCommentCounts] = useState<CommentCount>({});
     const token=Cookies.get('token');
     const [clickedOne,setClicked]=useState<Film | TVShow>();
     const[typeClicked,setType]=useState("");
+    const [loading,setLoading]=useState(false);
 
     
     useEffect(()=>{
+        setLoading(true);
         if(type==="TV"){
             axios.get(`https://tmdb-database-strapi.onrender.com/api/recommendation-tv-shows?filters[id_TvShow][$eq]=${clicked.id_TvShow}`,{
                 headers: {
@@ -63,36 +64,14 @@ function Recommendation({ type, clicked, onRecommendationClick }: Recommendation
                 }
             }).catch((erreur)=>{
                 console.log(erreur)
-            })
+            }).finally(()=>{
+                setLoading(false);
+            }
+            )
 
         }
     },[clicked]);
 
-    useEffect(() => {
-        //calculer le nombre de commentaire
-    const fetchCommentCounts = async () => {
-      const counts: CommentCount = {}
-
-      await Promise.all(
-        recommendations.map(async (film) => {
-          const idfilm=parseInt(film.id)
-          const res = await axios.get(
-            `https://tmdb-database-strapi.onrender.com/api/commentaires?filters[id_media_type][$eq]=${idfilm}&filters[media_type][$eq]=${type}&pagination[pageSize]=1`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-            }
-          )
-          counts[film.id_film] = res.data.meta.pagination.total
-          
-        })
-      )
-
-      setCommentCounts(counts)
-    }
-
-    fetchCommentCounts()
-  }, [recommendations]);
 
   return (
     <>
@@ -101,11 +80,16 @@ function Recommendation({ type, clicked, onRecommendationClick }: Recommendation
     <div className="w-full flex flex-col mt-8">
     <p className='text-white font-bold text-2xl'>Recommendation</p>
     <div className='flex mt-4 flex-wrap'>
-            {recommendations.map((film,index)=>{
+        {loading? (
+                <div className="flex justify-center items-center h-40"> 
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            ):
+            recommendations.map((film,index)=>{
                 if(film){
                     return(
                         <div className='mr-8' key={index}>
-                            <Card key={index} film={film} commentCount={type==="TV"?commentCounts[film?.id_TvShow]:commentCounts[film?.id_film] } type={type} onClick={() =>{
+                            <Card key={index} film={film} type={type} onClick={() =>{
                            onRecommendationClick(film, film.id_TvShow?"TV":"movie");
                         } } />
                         </div>

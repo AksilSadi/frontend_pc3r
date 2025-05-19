@@ -12,6 +12,8 @@ import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { Navigate } from "react-router";
 import Movie from "./movie";
+import Tv from "./Tv";
+import Favorites from "./favorites";
 function Acceuil(){
     const [naviguer, setNaviguer] = useState(false);
     const [nomPage, setNomPage] = useState("Home");
@@ -104,6 +106,8 @@ function Acceuil(){
                         </div>
                         {nomPage==='Home'?<Home page={nomPage} refresh={refresh} />:null}
                         {nomPage==='Movie'?<Movie refresh={refresh} />:null}
+                        {nomPage==='TV'?<Tv refresh={refresh} />:null}
+                        {nomPage==='Favorites'?<Favorites refresh={refresh} />:null}
         </div>
       </>
     )

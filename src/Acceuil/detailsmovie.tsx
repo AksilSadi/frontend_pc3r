@@ -1,7 +1,7 @@
 import {Film,TVShow} from '../constant.ts'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faStar,faHeart,faEllipsisVertical } from '@fortawesome/free-solid-svg-icons'
-import { useState,useEffect } from 'react';
+import { useState,useEffect, use } from 'react';
 import axios from "axios";
 import Cookies from 'js-cookie';
 import logo from '../assets/IMDb-Logo-700x394.png'
@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import Recommendation from './Recommendation.tsx';
 import Rating from '@mui/material/Rating';
 import Searched from './Searched.tsx';
-function Details({type,clicked,film,categorie}:{type: string,clicked: Film | TVShow,film: string,categorie:string}): JSX.Element{
+function Details({type,clicked}:{type: string,clicked: Film | TVShow}): JSX.Element{
     const[genres,setGenres]=useState<string []>([]);
     const [comment, setComment] = useState('');
     const token=Cookies.get('token');
@@ -29,13 +29,14 @@ function Details({type,clicked,film,categorie}:{type: string,clicked: Film | TVS
     const[liked,setLiked]=useState(false);
     const [menuOpen, setMenuOpen] = useState(null);
     const[showMenu,setShowMenu]=useState(false);
-    const[averageVote,setAverageVote]=useState<number>(null);
-    const[total,setTotalVote]=useState<number>(null);
+    const[averageVote,setAverageVote]=useState<number>(clickedOne.vote_average_website);
+    const[total,setTotalVote]=useState<number>(clickedOne.vote_count_website);
 
     const handleRateClick = async () => {
   if (note !== null) {
     try {
-      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${clicked.id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`, {
+      const id = type === "movie" ? clickedOne.id_film : clickedOne.id_TvShow;
+      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -58,7 +59,7 @@ function Details({type,clicked,film,categorie}:{type: string,clicked: Film | TVS
         // Nouveau vote
         await axios.post(`https://tmdb-database-strapi.onrender.com/api/votes`, {
           data: {
-            id_media_type: clicked.id,
+            id_media_type: type==="movie"?clickedOne.id_film:clickedOne.id_TvShow,
             media_type: type,
             vote: note,
             id_user: user.id
@@ -100,7 +101,8 @@ const handleDelete = async (id: number) => {
 
 const handleLike = async () => {
     try {
-      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${clicked.id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`, {
+      const id = type === "movie" ? clickedOne.id_film : clickedOne.id_TvShow;
+      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -120,7 +122,7 @@ const handleLike = async () => {
         // Nouveau like
         await axios.post(`https://tmdb-database-strapi.onrender.com/api/Favorites`, {
           data: {
-            id_media_type: clicked.id,
+            id_media_type: id,
             media_type: type,
             id_user: user.id
           }
@@ -145,6 +147,8 @@ const handleLike = async () => {
     setClicked(film);
     setType(newType);
     setChanged(!changed);
+    setNote(null);
+    setLiked(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });   
   };
 
@@ -171,7 +175,8 @@ const handleLike = async () => {
     },[clickedOne,typeClicked]);
 
     useEffect(()=>{
-       axios.get(`https://tmdb-database-strapi.onrender.com/api/votes/average?id_media_type=${clicked.id}`,{
+      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
+       axios.get(`https://tmdb-database-strapi.onrender.com/api/votes/average?id_media_type=${id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -187,7 +192,8 @@ const handleLike = async () => {
     },[note]);
 
     useEffect(()=>{
-        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${clicked.id}`,{
+      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
+        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -203,11 +209,15 @@ const handleLike = async () => {
     },[note]);
 
     useEffect(()=>{
+        if(averageVote===null || total===null){
+            return;
+        }
+        console.log(averageVote);
       let url:string;
         if(type==="movie"){
-            url=`https://tmdb-database-strapi.onrender.com/api/films/${clicked.id}`
+            url=`https://tmdb-database-strapi.onrender.com/api/films/${clickedOne.documentId}`
         }else{
-            url=`https://tmdb-database-strapi.onrender.com/api/Tv-shows/${clicked.id}`
+            url=`https://tmdb-database-strapi.onrender.com/api/Tv-shows/${clickedOne.documentId}`
         }
         axios.put(url,{
             data: {
@@ -219,6 +229,7 @@ const handleLike = async () => {
                 Authorization: `Bearer ${token}`
             }
         }).then((respo)=>{
+          console.log(respo.data);
             if(respo.data){
                 console.log("Vote mis à jour avec succès");
             }
@@ -227,17 +238,21 @@ const handleLike = async () => {
             console.error(`Erreur pour le genre ID ${clickedOne.genre_tv_films}:`, err);
         }
         )
-    },[averageVote,total]);
+    },[averageVote,total,note]);
 
 
 
 
     useEffect(()=>{
-        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${clicked.id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`,{
+      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
+        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
         }).then((respo)=>{
+            if(respo.data){
+                console.log(respo.data);
+            }
             if(respo.data.data.length>0){
                 setNote(respo.data.data[0].vote);
             }
@@ -246,10 +261,11 @@ const handleLike = async () => {
             console.error(`Erreur pour le genre ID ${clickedOne.genre_tv_films}:`, err);
         }
         )
-    },[clicked]);
+    },[clickedOne]);
 
     useEffect(()=>{
-        axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${clicked.id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`,{
+      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
+        axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -262,7 +278,7 @@ const handleLike = async () => {
             console.error(`Erreur pour le genre ID ${clickedOne.genre_tv_films}:`, err);
         }
         )
-    },[clicked]);
+    },[clickedOne]);
 
 
     useEffect(()=>{
@@ -338,12 +354,12 @@ const handleLike = async () => {
         })
     }
 
+
+
     return(
         <>
 
-        {(film!="" && categorie)?
-        <Searched film={film} categorie={categorie} />
-        :<div className="w-full h-full flex flex-col items-center">
+        <div className="w-full h-full flex flex-col items-center">
         <div className="w-full flex flex-col relative min-h-[400px] rounded-lg overflow-hidden mt-8">
             <img
                 src={`https://image.tmdb.org/t/p/original${type==="movie"?clickedOne.Backdrop_path:clickedOne.backdrop_path}`}
@@ -535,7 +551,7 @@ const handleLike = async () => {
   </div>
   </div>
 
-        </div>}
+        </div>
         </>
     
         

@@ -24,9 +24,7 @@ export type Film = {
   page_fetched_from: string;
   genre_tv_films: number[];
 };
-export type CommentCount = {
-  [filmId: string]: number
-}
+
 export type TVShow = {
   id: number;
   documentId: string;
@@ -63,7 +61,7 @@ export type RecommendationProps = FormProps & {
 
 export type SectionMovies = {
   pages: {
-    [pageNumber: number]: Film[];  // tableau de films par page
+    [pageNumber: number]: Film | TVShow[];  // tableau de films par page
   };
   totalPages: number;              // nombre total de pages pour cette section
 };

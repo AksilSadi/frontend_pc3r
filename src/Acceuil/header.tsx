@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faMagnifyingGlass,faAngleDown } from '@fortawesome/free-solid-svg-icons'
 import './Acceuil.css'
 import '../login.css';
-function Header({search}:{search:(film:string,categorie:string)=>void}):JSX.Element {
+function Header({search,onclick}:{search:(film:string,categorie:string)=>void,onclick:() => void}):JSX.Element {
     const { user } = useUser();
     const [searchTerm, setSearchTerm] = useState('');
     const [category, setLocalCategory] = useState("Film");
@@ -58,7 +58,7 @@ function Header({search}:{search:(film:string,categorie:string)=>void}):JSX.Elem
 
                   </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center hover:cursor-pointer" onClick={onclick}>
                 <img src={image} className="h-10 w-10 rounded-full"></img>
                 <div className="flex flex-col justify-center ml-2">
                     <p className='font-semibold text-white'>{`${user?.Nom_user} ${user?.Prenom_user}`}</p>

@@ -16,9 +16,11 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
     const currentData = categorie === "Film"
         ? searchedFilms?.pages[currentPage] || []
         : searchedTv?.pages[currentPage] || [];
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (categorie === "Film") {
+            setLoading(true);
             axios.get(`https://tmdb-database-strapi.onrender.com/api/films?filters[title][$contains]=${film}&pagination[page]=${currentPage}&pagination[pageSize]=12`, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -41,8 +43,11 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
                 }
             }).catch((erreur) => {
 
+            }).finally(() => {
+                setLoading(false);
             })
         } else if(categorie === "TV") {
+            setLoading(true);
             axios.get(`https://tmdb-database-strapi.onrender.com/api/Tv-shows?filters[Name][$contains]=${film}&pagination[page]=${currentPage}&pagination[pageSize]=12`, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -65,7 +70,10 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
                 }
             }).catch((erreur) => {
 
-            })
+            }).finally(() => {
+                setLoading(false);
+            }
+            )
         }   
     }, [film, categorie, currentPage]);
 
@@ -100,11 +108,17 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
   return (
     <>
     {clickedOne && typeClicked?
-            <Details type={typeClicked} clicked={clickedOne} film="" categorie="" />
+            <Details type={typeClicked} clicked={clickedOne}  />
             :<div className='flex flex-col'>
         <h1 className="text-2xl font-bold mb-4 mt-4 text-white">Résultats de recherche</h1>
         <div className="grid grid-cols-4 gap-4">
-            {currentData.length === 0 ? (
+
+            {loading ? (
+                <div className="flex justify-center items-center h-40">
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            ) : 
+            currentData.length === 0 ? (
                 <p className="text-center col-span-4 text-gray-400 text-lg">Aucun résultat trouvé.</p>
                 ) : (
                 currentData.map((item: Film | TVShow) => (
