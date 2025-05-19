@@ -9,8 +9,8 @@ import Details from './detailsmovie';
 function Recommendation({ type, clicked, onRecommendationClick }: RecommendationProps) {
     const[recommendations,setRecommendations]=useState([]);
     const token=Cookies.get('token');
-    const [clickedOne,setClicked]=useState<Film | TVShow>();
-    const[typeClicked,setType]=useState("");
+    const clickedOne:Film | TVShow | undefined= undefined;
+    const typeClicked: string | undefined = "";
     const [loading,setLoading]=useState(false);
 
     

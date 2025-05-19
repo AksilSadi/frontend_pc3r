@@ -475,8 +475,10 @@ const handleLike = async () => {
                 value={note}
                 max={10} 
                 precision={1} 
-                onChange={(event, newValue) => {
-                setNote(newValue);
+                onChange={(event) => {
+                const target = event.target as HTMLInputElement;
+                const newValue = target.value;
+                setNote(Number(newValue));
                 }}
             />
         </div>
