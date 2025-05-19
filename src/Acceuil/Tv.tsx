@@ -39,7 +39,7 @@ function Tv({refresh }: {refresh:boolean }) {
 
     const getYears = () => {
         const Year = new Date().getFullYear() + 1;
-        return Array.from(new Array(10), (val, index) => `${Year - (index-1)}`);
+        return Array.from(new Array(10), (index) => `${Year - (index-1)}`);
       }
     const [selectedSection, setSelectedSection] = useState("Tout");
     const [moviesBySection, setMoviesBySection] = useState<MoviesBySection>({});
@@ -506,10 +506,10 @@ function Tv({refresh }: {refresh:boolean }) {
         <Card
           key={film.id}
           film={film}
-          type="movie"
+          type="TV"
           onClick={() => {
             setClicked(film);
-            setType("movie");
+            setType("TV");
           }}
         />
       ));
