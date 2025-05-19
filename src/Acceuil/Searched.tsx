@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import axios from "axios";
-import {Film,CommentCount,TVShow,SectionMovies} from '../constant.ts'
+import {Film,TVShow,SectionMovies} from '../constant.ts'
 import { Card } from './card.tsx';
 import Cookies from 'js-cookie';
 import Details from './detailsmovie.tsx';
@@ -42,6 +42,7 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
                     });
                 }
             }).catch((erreur) => {
+                console.error("Erreur lors de la récupération des films :", erreur);
 
             }).finally(() => {
                 setLoading(false);
@@ -69,6 +70,7 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
                     });
                 }
             }).catch((erreur) => {
+                console.error("Erreur lors de la récupération des films :", erreur);
 
             }).finally(() => {
                 setLoading(false);
@@ -81,7 +83,7 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
     const delta = 2; // Nombre de pages à afficher de chaque côté de la page actuelle
     const range = [];
     const rangeWithDots = [];
-    let l: number;
+    let l: number | null=null ;
 
     for (let i = 1; i <= total; i++) {
       if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
@@ -89,7 +91,7 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
       }
     }
 
-    for (let i of range) {
+    for (const i of range) {
       if (l) {
         if (i - l === 2) {
           rangeWithDots.push(l + 1);
@@ -112,28 +114,27 @@ function Searched({film, categorie}:{film: string, categorie: string}) {
             :<div className='flex flex-col'>
         <h1 className="text-2xl font-bold mb-4 mt-4 text-white">Résultats de recherche</h1>
         <div className="grid grid-cols-4 gap-4">
-
-            {loading ? (
-                <div className="flex justify-center items-center h-40">
-                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-            ) : 
-            currentData.length === 0 ? (
-                <p className="text-center col-span-4 text-gray-400 text-lg">Aucun résultat trouvé.</p>
-                ) : (
-                currentData.map((item: Film | TVShow) => (
-                    <Card
-                    key={item.id}
-                    film={item}
-                    type={categorie === "Film" ? "movie" : "tv"}
-                    onClick={() => {
-                        setClicked(item);
-                        setType(categorie === "Film" ? "movie" : "tv");
-                    }}
-                    />
-                ))
-                )}
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : !Array.isArray(currentData) || currentData.length === 0 ? (
+            <p className="text-center col-span-4 text-gray-400 text-lg">Aucun résultat trouvé.</p>
+          ) : (
+            currentData.map((item: Film | TVShow) => (
+              <Card
+                key={item.id}
+                film={item}
+                type={categorie === "Film" ? "movie" : "tv"}
+                onClick={() => {
+                  setClicked(item);
+                  setType(categorie === "Film" ? "movie" : "tv");
+                }}
+              />
+            ))
+          )}
         </div>
+
         <div className="flex justify-center mt-4 pb-8">
             {paginationRange.map((p, index) =>
               p === "..." ? (

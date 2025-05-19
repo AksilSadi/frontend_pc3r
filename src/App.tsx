@@ -1,7 +1,6 @@
 import './App.css'
 import Login from './login'
 import Defiler from './difelementImage'
-import Acceuil from './Acceuil/Acceuil'
 function App() {
 
   return (

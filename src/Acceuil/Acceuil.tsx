@@ -5,7 +5,6 @@ import { faFilm } from '@fortawesome/free-solid-svg-icons'
 import { faHouse } from '@fortawesome/free-solid-svg-icons'
 import { faTv } from '@fortawesome/free-solid-svg-icons'
 import { faHeart } from '@fortawesome/free-solid-svg-icons'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import './Acceuil.css'
 import Home from './Home'
 import Cookies from 'js-cookie';
@@ -15,7 +14,6 @@ import Movie from "./movie";
 import Tv from "./Tv";
 import Favorites from "./favorites";
 function Acceuil(){
-    const [naviguer, setNaviguer] = useState(false);
     const [nomPage, setNomPage] = useState("Home");
     const [refresh, setRefresh] = useState(false);
     const token=Cookies.get('token');
@@ -104,7 +102,7 @@ function Acceuil(){
                           <li className='list-none ml-3 text-white text-base child '>Deconnecter</li>
                          </div>
                         </div>
-                        {nomPage==='Home'?<Home page={nomPage} refresh={refresh} />:null}
+                        {nomPage==='Home'?<Home refresh={refresh} />:null}
                         {nomPage==='Movie'?<Movie refresh={refresh} />:null}
                         {nomPage==='TV'?<Tv refresh={refresh} />:null}
                         {nomPage==='Favorites'?<Favorites refresh={refresh} />:null}

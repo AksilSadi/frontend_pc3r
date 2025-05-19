@@ -5,7 +5,9 @@ import Cookies from 'js-cookie';
 type User = {
   Nom_user: string;
   Prenom_user: string;
-  id:number
+  id:number;
+  Date_naissance: string;
+  email_user: string;
 };
 
 type UserContextType = {

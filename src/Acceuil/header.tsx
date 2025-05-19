@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faMagnifyingGlass,faAngleDown } from '@fortawesome/free-solid-svg-icons'
 import './Acceuil.css'
 import '../login.css';
-function Header({search,onclick}:{search:(film:string,categorie:string)=>void,onclick:() => void}):JSX.Element {
+function Header({search,onclick}:{search:(film:string,categorie:string)=>void,onclick:() => void}) {
     const { user } = useUser();
     const [searchTerm, setSearchTerm] = useState('');
     const [category, setLocalCategory] = useState("Film");

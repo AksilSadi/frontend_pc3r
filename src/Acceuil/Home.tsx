@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import './Acceuil.css'
 import axios from "axios";
-import {Film,CommentCount,TVShow} from '../constant.ts'
+import {Film,TVShow} from '../constant.ts'
 import { Card } from './card.tsx';
 import { Navigate } from "react-router";
 import Cookies from 'js-cookie';
@@ -12,7 +12,7 @@ import Searched from './Searched.tsx';
 import DatePicker from "react-datepicker";
 import toast from 'react-hot-toast';
 
-function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
+function Home({ refresh }: {refresh:boolean }){
     const [films,setFilms]=useState<Film []>([]);
     const [TV,setTv]=useState<TVShow[]>([]);
     const [topFilms,setTopF]=useState<Film []>([]);
@@ -23,8 +23,8 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
     const[typeClicked,setType]=useState("");
     const { user } = useUser();
     const token=Cookies.get('token');
-    const[searchTerm,setSearchTerm]=useState<string>();
-    const [category,setCategory]=useState<string>();
+    const[searchTerm,setSearchTerm]=useState<string>("");
+    const [category,setCategory]=useState<string>("");
     const [loading,setLoading]=useState(false);
     const [loadingTv,setLoadingTv]=useState(false);
     const [loadingTop,setLoadingTop]=useState(false);
@@ -32,10 +32,10 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
     const [loadingTopTv,setLoadingTopTv]=useState(false);
     const [loadingComingTv,setLoadingComingTv]=useState(false);
     const [showProfile, setShowProfile] = useState(false);
-    const[nom,setNom]=useState(user.Nom_user);
-    const[prenom,setPrenom]=useState(user.Prenom_user);
-    const [dateNaissance, setDateNaissance] = useState<Date | null>(user.Date_naissance ? new Date(user.Date_naissance) : null);
-    const[email,setEmail]=useState(user.email_user);
+    const[nom,setNom]=useState(user?.Nom_user);
+    const[prenom,setPrenom]=useState(user?.Prenom_user);
+    const [dateNaissance, setDateNaissance] = useState<Date | null>(user?.Date_naissance ? new Date(user?.Date_naissance) : null);
+    const[email,setEmail]=useState(user?.email_user);
     const[password,setPassword]=useState('');
     const { setUser } = useUser();
 
@@ -51,7 +51,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             Date_naissance: dateNaissance,
             email: email
         };
-        axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user.id}`,data, {
+        axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user?.id}`,data, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -73,10 +73,10 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             console.error(error);
         }).finally(() => {
             setShowProfile(false);
-            setNom(user.Nom_user);
-            setPrenom(user.Prenom_user);
-            setDateNaissance(user.Date_naissance ? new Date(user.Date_naissance) : null);
-            setEmail(user.email_user);
+            setNom(user?.Nom_user);
+            setPrenom(user?.Prenom_user);
+            setDateNaissance(user?.Date_naissance ? new Date(user.Date_naissance) : null);
+            setEmail(user?.email_user);
             setPassword('');
         });
     }
@@ -92,7 +92,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
                     setFilms(respo.data.data);
                 }
               }).catch((erreur)=>{
-
+                console.log(erreur);
               }).finally(() => {
                 setLoading(false);
               }
@@ -109,7 +109,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
                     setTv(respo.data.data);
                 }
               }).catch((erreur)=>{
-
+                console.log(erreur);
               }).finally(() => {
                 setLoadingTv(false);
               }
@@ -127,6 +127,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
                     setTopF(respo.data.data);
                 }
               }).catch((erreur)=>{
+                console.log(erreur);
 
               }).finally(() => {
                 setLoadingTop(false);
@@ -145,6 +146,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
                     setTopTv(respo.data.data);
                 }
               }).catch((erreur)=>{
+                console.log(erreur);
 
               }).finally(() => {
                 setLoadingTopTv(false);
@@ -163,6 +165,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
                     setComingF(respo.data.data);
                 }
               }).catch((erreur)=>{
+                console.log(erreur);
 
               }).finally(() => {
                 setLoadingComing(false);
@@ -181,6 +184,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
                     setComingTV(respo.data.data);
                 }
               }).catch((erreur)=>{
+                console.log(erreur);
 
               }).finally(() => {
                 setLoadingComingTv(false);
@@ -234,7 +238,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
                            </div>
                            <div className="flex flex-col mt-3">
                                <label className=" text-white">Mot de passe</label>
-                               <input type="password"  className="pl-1 mt-1 h-10 rounded-lg bg-transparent border-2 border-solid  border-white outline-none focus:border-4 text-white placeholder:text-gray-300"  placeholder="************" onChange={(e)=>{
+                               <input type="password" value={password}  className="pl-1 mt-1 h-10 rounded-lg bg-transparent border-2 border-solid  border-white outline-none focus:border-4 text-white placeholder:text-gray-300"  placeholder="************" onChange={(e)=>{
                                  setPassword(e.target.value);
                                  
                                }}></input>
@@ -273,7 +277,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             }
             }/>
         {clickedOne && typeClicked?
-            <Details type={typeClicked} clicked={clickedOne} film={searchTerm} categorie={category} />
+            <Details type={typeClicked} clicked={clickedOne} />
         
         :(searchTerm!="" && category)?
         <Searched film={searchTerm} categorie={category} />
@@ -295,7 +299,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             ):
                         films.map((film,index)=>{
                             return(
-                            <Card key={film.id} film={film} type="movie" onClick={() =>{
+                            <Card key={index} film={film} type="movie" onClick={() =>{
                                 setClicked(film);
                                 setType("movie");
                             } } />
@@ -313,7 +317,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             ):
                     TV.map((film,index)=>{
                         return(
-                        <Card key={film.id} film={film} type="TV" onClick={() =>{
+                        <Card key={index} film={film} type="TV" onClick={() =>{
                             setClicked(film);
                             setType("TV");
                         } } />
@@ -334,7 +338,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             ):
                     topFilms.map((film,index)=>{
                         return(
-                        <Card key={film.id} film={film} type="movie" onClick={() =>{
+                        <Card key={index} film={film} type="movie" onClick={() =>{
                             setClicked(film);
                             setType("movie");
                         } } />
@@ -352,7 +356,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             ):
                     topTv.map((film,index)=>{
                         return(
-                        <Card key={film.id} film={film} type="TV" onClick={() =>{
+                        <Card key={index} film={film} type="TV" onClick={() =>{
                             setClicked(film);
                             setType("TV");
                         } }  />
@@ -374,7 +378,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             ):
                     comingFilms.map((film,index)=>{
                         return(
-                        <Card key={film.id} film={film} type="movie" onClick={() =>{
+                        <Card key={index} film={film} type="movie" onClick={() =>{
                             setClicked(film);
                             setType("movie");
                         } } />
@@ -392,7 +396,7 @@ function Home({ page,refresh }: { page: string,refresh:boolean }): JSX.Element{
             ):
                     comingTV.map((film,index)=>{
                         return(
-                        <Card key={film.id} film={film} type="TV" onClick={() =>{
+                        <Card key={index} film={film} type="TV" onClick={() =>{
                             setClicked(film);
                             setType("TV");
                         } } />

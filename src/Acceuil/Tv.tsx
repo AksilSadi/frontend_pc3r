@@ -1,14 +1,13 @@
 import Details from './detailsmovie'
 import Header from './header.tsx';
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './Acceuil.css'
 import axios from "axios";
-import {Film,CommentCount,TVShow,MoviesBySection} from '../constant.ts'
+import {Film,TVShow,MoviesBySection,genreEntity} from '../constant.ts'
 import { Card } from './card.tsx';
-import { Navigate } from "react-router";
 import Cookies from 'js-cookie';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faFilter,faAngleDown } from '@fortawesome/free-solid-svg-icons'
+import { faAngleDown } from '@fortawesome/free-solid-svg-icons'
 import Searched from './Searched.tsx';
 import DatePicker from "react-datepicker";
 import toast from 'react-hot-toast';
@@ -46,13 +45,13 @@ function Tv({refresh }: {refresh:boolean }) {
     const [moviesBySection, setMoviesBySection] = useState<MoviesBySection>({});
     const [page, setPage] = useState(1);
     const token=Cookies.get('token');
-    const [genreIdMap, setGenreIdMap] = useState<Record<string, number>>({});
-    const [clickedOne,setClicked]=useState<Film>();
+    const [genreIdMap, setGenreIdMap] = useState<Record<string, string>>({});
+    const [clickedOne,setClicked]=useState<Film | TVShow>();
     const[typeClicked,setType]=useState("");
-    const totalPages = Math.ceil(moviesBySection[selectedSection]?.totalPages/15) || 1;
-    const[searchTerm,setSearchTerm]=useState<string>();
-    const [category,setCategory]=useState<string>();
-    const [moviesFiltred, setMovieFiltred] = useState([]);
+    const totalPages = Math.ceil((moviesBySection[selectedSection]?.totalPages ?? 15) / 15) || 1;
+    const[searchTerm,setSearchTerm]=useState<string>("");
+    const [category,setCategory]=useState<string>("");
+    const [moviesFiltred, setMovieFiltred] = useState<Film | TVShow[]>([]);
     const[pageFiltred,setPageFiltred]=useState(1);
     const [totalPagesFiltred, setTotalPagesFiltred] = useState(1);
     const [filtreAppliquer,setfiltreAppliquer]=useState(false);
@@ -61,10 +60,10 @@ function Tv({refresh }: {refresh:boolean }) {
     const[loadingFiltred,setLoadingFiltred]=useState(false);
     const [showProfile, setShowProfile] = useState(false);
         const { user } = useUser();
-            const[nom,setNom]=useState(user.Nom_user);
-            const[prenom,setPrenom]=useState(user.Prenom_user);
-            const [dateNaissance, setDateNaissance] = useState<Date | null>(user.Date_naissance ? new Date(user.Date_naissance) : null);
-            const[email,setEmail]=useState(user.email_user);
+            const[nom,setNom]=useState(user?.Nom_user);
+            const[prenom,setPrenom]=useState(user?.Prenom_user);
+            const [dateNaissance, setDateNaissance] = useState<Date | null>(user?.Date_naissance ? new Date(user.Date_naissance) : null);
+            const[email,setEmail]=useState(user?.email_user);
             const[password,setPassword]=useState('');
             const { setUser } = useUser();
     
@@ -75,7 +74,7 @@ function Tv({refresh }: {refresh:boolean }) {
                 Date_naissance: dateNaissance,
                 email: email
             };
-            axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user.id}`,data, {
+            axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user?.id}`,data, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -97,10 +96,10 @@ function Tv({refresh }: {refresh:boolean }) {
                 console.error(error);
             }).finally(() => {
                 setShowProfile(false);
-                setNom(user.Nom_user);
-                setPrenom(user.Prenom_user);
-                setDateNaissance(user.Date_naissance ? new Date(user.Date_naissance) : null);
-                setEmail(user.email_user);
+                setNom(user?.Nom_user);
+                setPrenom(user?.Prenom_user);
+                setDateNaissance(user?.Date_naissance ? new Date(user.Date_naissance) : null);
+                setEmail(user?.email_user);
                 setPassword('');
             });
         }
@@ -136,8 +135,8 @@ function Tv({refresh }: {refresh:boolean }) {
 
       // Construire la map : nom => id
       const genres = response.data.data;
-      const map: Record<string, number> = {};
-      genres.forEach((genre: any) => {
+      const map: Record<string, string> = {};
+      genres.forEach((genre: genreEntity) => {
         map[genre.nom_genre] = genre.id_genre;
       });
 
@@ -198,7 +197,7 @@ function Tv({refresh }: {refresh:boolean }) {
     fetchMovies();
   }, [filtreAppliquer,selectedSection, pageFiltred,cliquked,deletedFilter]);
 
-    async function fetchMovies(section, page) {
+    async function fetchMovies(section:string, page:number) {
     // Si on a déjà la page dans le cache, on ne refait pas le fetch
     if (
       moviesBySection[section] &&
@@ -270,7 +269,7 @@ function Tv({refresh }: {refresh:boolean }) {
     const delta = 2; // Nombre de pages à afficher de chaque côté de la page actuelle
     const range = [];
     const rangeWithDots = [];
-    let l: number;
+    let l: number | null=null ;
 
     for (let i = 1; i <= total; i++) {
       if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
@@ -278,7 +277,7 @@ function Tv({refresh }: {refresh:boolean }) {
       }
     }
 
-    for (let i of range) {
+    for (const i of range) {
       if (l) {
         if (i - l === 2) {
           rangeWithDots.push(l + 1);
@@ -339,7 +338,7 @@ function Tv({refresh }: {refresh:boolean }) {
                                </div>
                                <div className="flex flex-col mt-3">
                                    <label className=" text-white">Mot de passe</label>
-                                   <input type="password"  className="pl-1 mt-1 h-10 rounded-lg bg-transparent border-2 border-solid  border-white outline-none focus:border-4 text-white placeholder:text-gray-300"  placeholder="************" onChange={(e)=>{
+                                   <input type="password" value={password}  className="pl-1 mt-1 h-10 rounded-lg bg-transparent border-2 border-solid  border-white outline-none focus:border-4 text-white placeholder:text-gray-300"  placeholder="************" onChange={(e)=>{
                                      setPassword(e.target.value);
                                      
                                    }}></input>
@@ -483,32 +482,42 @@ function Tv({refresh }: {refresh:boolean }) {
             </div>
           {/*ici je vais avec les div des filtre appliquer avec le croix */}
         </div>
-        <div className='flex flex-wrap mt-4'>
-          {loadingFiltred || loading ? (
-            <div className="flex justify-center items-center h-40">
-              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : 
-            (
-            (filtreAppliquer ? moviesFiltred : moviesBySection[selectedSection]?.pages?.[page]) || []
-          ).length > 0 ? (
-            (filtreAppliquer ? moviesFiltred : moviesBySection[selectedSection]?.pages?.[page]).map(
-              (film: TVShow) => (
-                <Card
-                  key={film.id}
-                  film={film}
-                  type="TV"
-                  onClick={() => {
-                    setClicked(film);
-                    setType("TV");
-                  }}
-                />
-              )
-            )
-          ) : (
-            <p className="text-center text-gray-400 mt-4">Aucun résultat trouvé.</p>
-          )}
-                  </div>
+
+<div className="flex flex-wrap mt-4">
+  {loadingFiltred || loading ? (
+    <div className="flex justify-center items-center h-40 w-full">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  ) : (
+    (() => {
+      const currentList = filtreAppliquer
+        ? moviesFiltred
+        : moviesBySection[selectedSection]?.pages?.[page] ?? [];
+
+      if (!Array.isArray(currentList) || currentList.length === 0) {
+        return (
+          <p className="text-center text-gray-400 mt-4 w-full">
+            Aucun résultat trouvé.
+          </p>
+        );
+      }
+
+      return currentList.map((film: Film | TVShow) => (
+        <Card
+          key={film.id}
+          film={film}
+          type="movie"
+          onClick={() => {
+            setClicked(film);
+            setType("movie");
+          }}
+        />
+      ));
+
+    })()
+  )}
+</div>
+
         <div className="flex justify-center mt-4 pb-8">
             {(filtreAppliquer ? filtredpaginationRange : paginationRange).map((p, index) =>
               p === "..." ? (

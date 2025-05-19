@@ -1,7 +1,5 @@
-import { useState,useEffect } from "react"
+import { useState } from "react"
 import './login.css'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAngleDown } from '@fortawesome/free-solid-svg-icons'
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
@@ -10,21 +8,17 @@ import toast from 'react-hot-toast';
 import { Navigate } from "react-router";
 import { useUser } from "./Context/UserContext";
 type FormProps = {
-  isRegistering: boolean;
+  isLogin: boolean;
 }
 function Form({ isLogin }: FormProps) {
  const[email,setEmail]=useState('');
  const[erreurEmail,setErreurEmail]=useState(false);  
  const[password,setPassword]=useState('');
- const[erreurPass,setErreurPass]=useState('');
  const[nom,setNom]=useState('');
  const[prenom,setPrenom]=useState('');
- const[sexe,setSexe]=useState('Homme');
  const [dateNaissance, setDateNaissance] = useState<Date | null>(null);
  const { setUser } = useUser();
- const [reverse,setReverse]=useState(false);
  const[rememberMe,setRememberMe]=useState(false);
- const personne={email, password, rememberMe}
  const[navige,setNavige]=useState(false);
  const[erreur,setErreur]=useState(false);
  const[loading,setLoading]=useState(false);
@@ -69,15 +63,16 @@ function Form({ isLogin }: FormProps) {
         toast.error("vous remplir les deux champ")
       }
     }else{
-        if(nom && prenom && dateNaissance && sexe){
+        if(nom && prenom && dateNaissance ){
           const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
           if (!emailRegex.test(email)) {
             toast.error("vous devez inserer l'email correctement")
             return
           }
-        if(password.length<8){
-          setErreurPass("mot de passe doit depasser 8 caracteres");
-        }
+          if (password.length < 8) {
+            toast.error("le mot de passe doit contenir au moins 8 caracteres");
+            return;
+          }
         setLoading(true);
           axios.post("https://tmdb-database-strapi.onrender.com/api/auth/local/register",user).then((respo)=>{
                       const idUser=respo.data.user.id;
@@ -86,6 +81,8 @@ function Form({ isLogin }: FormProps) {
                         id:idUser,
                         Nom_user:nom,
                         Prenom_user:prenom,
+                        email_user:email,
+                        Date_naissance:dateNaissance+""
                       }
                       const personne={
                         id:idUser,

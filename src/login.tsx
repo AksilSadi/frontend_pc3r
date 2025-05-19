@@ -4,8 +4,8 @@ import './login.css'
 
 function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const textRef = useRef(null);
-  const formRef = useRef(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   
   const [positions, setPositions] = useState({
     textX: 0,
@@ -15,43 +15,43 @@ function Login() {
   });
 
   useEffect(() => {
-    // Récupérer la position initiale sur l'axe X et la largeur de chaque élément
+  if (textRef.current && formRef.current) {
     const textPosition = textRef.current.getBoundingClientRect();
     const formPosition = formRef.current.getBoundingClientRect();
-    
-    // Mettre à jour les positions et largeurs des éléments
+
     setPositions({
       textX: textPosition.left,
       formX: formPosition.left,
       textWidth: textPosition.width,
-      formWidth: formPosition.width
+      formWidth: formPosition.width,
     });
-  }, []);
+  }
+}, []);
 
   const handleSwitch = () => {
-    setIsLogin((prev) => !prev);
-    
-    // Animer le swap des positions uniquement sur l'axe X
+  setIsLogin((prev) => !prev);
+
+  if (textRef.current && formRef.current) {
     textRef.current.style.transition = "transform 0.7s ease-in-out";
     formRef.current.style.transition = "transform 0.7s ease-in-out";
 
     if (isLogin) {
-      // Appliquer la translation sur l'axe X pour échanger les positions
       const maxWidth = Math.max(positions.textWidth, positions.formWidth);
-      
-      // Calculer la translation X en tenant compte du max width
+
       textRef.current.style.transform = `translateX(${
         positions.formX - positions.textX + (positions.formWidth - maxWidth)
       }px)`;
+
       formRef.current.style.transform = `translateX(${
         positions.textX - positions.formX + (positions.textWidth - maxWidth) + 100
       }px)`;
     } else {
-      // Remettre les éléments à leur position d'origine après le swap
       textRef.current.style.transform = "translateX(0)";
       formRef.current.style.transform = "translateX(0)";
     }
-  };
+  }
+};
+
 
   return (
     <div className="flex-col w-screen min-w-full h-full min-h-screen ">

@@ -1,7 +1,7 @@
-import {Film,TVShow} from '../constant.ts'
+import {Film,TVShow,Comment} from '../constant.ts'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faStar,faHeart,faEllipsisVertical } from '@fortawesome/free-solid-svg-icons'
-import { useState,useEffect, use } from 'react';
+import { useState,useEffect } from 'react';
 import axios from "axios";
 import Cookies from 'js-cookie';
 import logo from '../assets/IMDb-Logo-700x394.png'
@@ -11,32 +11,76 @@ import image from '../assets/download.png'
 import toast from 'react-hot-toast';
 import Recommendation from './Recommendation.tsx';
 import Rating from '@mui/material/Rating';
-import Searched from './Searched.tsx';
-function Details({type,clicked}:{type: string,clicked: Film | TVShow}): JSX.Element{
+
+type commentEntity = {
+  id: number;
+  documentId: string;
+  id_media_type: string;  
+  media_type: 'movie' | 'TV';  
+  commentaire: string;
+  createdAt: string; 
+  updatedAt: string;
+  publishedAt: string;
+  date_commentaire: string | null;
+  id_user: {
+                id: number;
+                documentId: string;
+                username: string;
+                email: string;
+                provider: string;
+                confirmed: boolean;
+                blocked: boolean;
+                createdAt: string;
+                updatedAt: string;
+                publishedAt: string;
+                Date_naissance: string;
+                Nom_user: string;
+                Prenom_user: string;
+            }
+
+};
+
+function Details({type,clicked}:{type: string,clicked: Film | TVShow}){
     const[genres,setGenres]=useState<string []>([]);
     const [comment, setComment] = useState('');
     const token=Cookies.get('token');
     const [page, setPage] = useState(1);
     const [changed, setChanged] = useState(false);
-    const [comments, setComments] = useState([]);
+    const [comments, setComments] = useState<Comment []>();
     const[totalComments,setTotal]=useState(0);
     const [clickedOne,setClicked]=useState<Film | TVShow>(clicked);
     const[typeClicked,setType]=useState(type);
     const { user } = useUser();
     const COMMENTS_PER_PAGE = 10;
-    const [note, setNote] = useState<number>(null);
+    const [note, setNote] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const[liked,setLiked]=useState(false);
-    const [menuOpen, setMenuOpen] = useState(null);
+    const [menuOpen, setMenuOpen] = useState<number | null>(null);
     const[showMenu,setShowMenu]=useState(false);
-    const[averageVote,setAverageVote]=useState<number>(clickedOne.vote_average_website);
-    const[total,setTotalVote]=useState<number>(clickedOne.vote_count_website);
+    const[averageVote,setAverageVote]=useState(clickedOne.vote_average_website);
+    const[total,setTotalVote]=useState(clickedOne.vote_count_website);
+    const displayTitle = type === 'movie'
+  ? (clickedOne as Film).title
+  : (clickedOne as TVShow).Name;
+  const displayDate = type === 'movie'
+  ? (clickedOne as Film).release_date
+  : (clickedOne as TVShow).first_air_date;
+  const displayUrl = type === 'movie'
+  ? (clickedOne as Film).Backdrop_path
+  : (clickedOne as TVShow).backdrop_path;
 
     const handleRateClick = async () => {
   if (note !== null) {
     try {
-      const id = type === "movie" ? clickedOne.id_film : clickedOne.id_TvShow;
-      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`, {
+      let id: string | undefined;
+      if (type === "movie" && "id_film" in clickedOne) {
+        id = clickedOne.id_film;
+      } else if (type === "TV" && "id_TvShow" in clickedOne) {
+        id = clickedOne.id_TvShow;
+      } else {
+        throw new Error("Type ou propriétés inconnues");
+      }
+      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user?.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -56,13 +100,20 @@ function Details({type,clicked}:{type: string,clicked: Film | TVShow}): JSX.Elem
         });
         toast.success("Vote mis à jour !");
       } else {
-        // Nouveau vote
+        let id_media_type: string | undefined;
+        if (type === "movie" && "id_film" in clickedOne) {
+          id_media_type = clickedOne.id_film;
+        } else if (type === "TV" && "id_TvShow" in clickedOne) {
+          id_media_type = clickedOne.id_TvShow;
+        } else {
+          throw new Error("clickedOne ne correspond à aucun type connu");
+        }
         await axios.post(`https://tmdb-database-strapi.onrender.com/api/votes`, {
           data: {
-            id_media_type: type==="movie"?clickedOne.id_film:clickedOne.id_TvShow,
+            id_media_type,
             media_type: type,
             vote: note,
-            id_user: user.id
+            id_user: user?.id
           }
         }, {
           headers: {
@@ -79,7 +130,7 @@ function Details({type,clicked}:{type: string,clicked: Film | TVShow}): JSX.Elem
     setIsModalOpen(false);
   }
 };
-const handleDelete = async (id: number) => {
+const handleDelete = async (id: string) => {
     try {
       const response = await axios.delete(`https://tmdb-database-strapi.onrender.com/api/commentaires/${id}`, {
         headers: {
@@ -88,7 +139,7 @@ const handleDelete = async (id: number) => {
       });
       setShowMenu(!showMenu);
       if (response.status === 204 || response.status === 200) {
-        setComments((prev) => prev.filter((comment) => comment.idc !== id));
+        setComments((prev) => prev?.filter((comment) => comment.idc !== id));
         toast.success("Commentaire supprimé avec succès");
       } else {
         toast.error("Erreur lors de la suppression du commentaire");
@@ -101,8 +152,15 @@ const handleDelete = async (id: number) => {
 
 const handleLike = async () => {
     try {
-      const id = type === "movie" ? clickedOne.id_film : clickedOne.id_TvShow;
-      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`, {
+      let id: string | undefined;
+      if (type === "movie" && "id_film" in clickedOne) {
+        id = clickedOne.id_film;
+      } else if (type === "TV" && "id_TvShow" in clickedOne) {
+        id = clickedOne.id_TvShow;
+      } else {
+        throw new Error("Type ou propriétés inconnues");
+      }
+      const existing = await axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user?.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -124,7 +182,7 @@ const handleLike = async () => {
           data: {
             id_media_type: id,
             media_type: type,
-            id_user: user.id
+            id_user: user?.id
           }
         }, {
           headers: {
@@ -153,7 +211,7 @@ const handleLike = async () => {
   };
 
     useEffect(()=>{
-        clickedOne.genre_tv_films.map((id,index)=>{
+        clickedOne.genre_tv_films.map((id)=>{
             axios.get(`https://tmdb-database-strapi.onrender.com/api/genre-Tv-shows?filters[id_genre][$eq]=${id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
@@ -175,7 +233,14 @@ const handleLike = async () => {
     },[clickedOne,typeClicked]);
 
     useEffect(()=>{
-      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
+      let id: string | undefined;
+      if (type === "movie" && "id_film" in clickedOne) {
+        id = clickedOne.id_film;
+      } else if (type === "TV" && "id_TvShow" in clickedOne) {
+        id = clickedOne.id_TvShow;
+      } else {
+        throw new Error("Type ou propriétés inconnues");
+      }
        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes/average?id_media_type=${id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
@@ -192,7 +257,14 @@ const handleLike = async () => {
     },[note]);
 
     useEffect(()=>{
-      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
+      let id: string | undefined;
+      if (type === "movie" && "id_film" in clickedOne) {
+        id = clickedOne.id_film;
+      } else if (type === "TV" && "id_TvShow" in clickedOne) {
+        id = clickedOne.id_TvShow;
+      } else {
+        throw new Error("Type ou propriétés inconnues");
+      }
         axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
@@ -244,8 +316,15 @@ const handleLike = async () => {
 
 
     useEffect(()=>{
-      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
-        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`,{
+      let id: string | undefined;
+      if (type === "movie" && "id_film" in clickedOne) {
+        id = clickedOne.id_film;
+      } else if (type === "TV" && "id_TvShow" in clickedOne) {
+        id = clickedOne.id_TvShow;
+      } else {
+        throw new Error("Type ou propriétés inconnues");
+      }
+        axios.get(`https://tmdb-database-strapi.onrender.com/api/votes?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user?.id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -264,8 +343,15 @@ const handleLike = async () => {
     },[clickedOne]);
 
     useEffect(()=>{
-      const id=type==="movie"?clickedOne.id_film:clickedOne.id_TvShow;
-        axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user.id}`,{
+      let id: string | undefined;
+      if (type === "movie" && "id_film" in clickedOne) {
+        id = clickedOne.id_film;
+      } else if (type === "TV" && "id_TvShow" in clickedOne) {
+        id = clickedOne.id_TvShow;
+      } else {
+        throw new Error("Type ou propriétés inconnues");
+      }
+        axios.get(`https://tmdb-database-strapi.onrender.com/api/Favorites?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${type}&filters[id_user][$eq]=${user?.id}`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -296,7 +382,7 @@ const handleLike = async () => {
                     setPage(totalPages);
                 }
                 const data = response.data.data;
-                data.map((item,index)=>{
+                data.map((item:commentEntity)=>{
                     const commentText = item.commentaire;
                     const id = item.documentId;
                     const nom = item.id_user.Nom_user;
@@ -304,7 +390,7 @@ const handleLike = async () => {
                     const id_user = item.id_user.id;
                     setComments((prev) => {
                         // Vérifie si un commentaire avec le même idc existe déjà
-                        const alreadyExists = prev.some((c) => c.idc === id);
+                        const alreadyExists = prev?.some((c) => c.idc === id);
 
                         if (alreadyExists) {
                             return prev; // Ne rien changer
@@ -317,7 +403,7 @@ const handleLike = async () => {
                             idc: id,
                             idU: id_user
                         };
-                        return [...prev, newComment]; // Ajouter le nouveau commentaire
+                        return [...prev|| [], newComment]; // Ajouter le nouveau commentaire
                     });
                 })
                 
@@ -337,7 +423,7 @@ const handleLike = async () => {
                 id_media_type: clickedOne.id,
                 media_type: typeClicked,
                 commentaire: comment,
-                id_user: user.id
+                id_user: user?.id
             }
         }, {
             headers: {
@@ -362,8 +448,7 @@ const handleLike = async () => {
         <div className="w-full h-full flex flex-col items-center">
         <div className="w-full flex flex-col relative min-h-[400px] rounded-lg overflow-hidden mt-8">
             <img
-                src={`https://image.tmdb.org/t/p/original${type==="movie"?clickedOne.Backdrop_path:clickedOne.backdrop_path}`}
-                alt={clickedOne.title}
+                src={`https://image.tmdb.org/t/p/original${displayUrl}`}
                 className="w-full h-full object-cover"
             />
   
@@ -382,7 +467,7 @@ const handleLike = async () => {
       
       <div className="flex flex-col items-center">
         <div className="text-yellow-400 font-semibold mb-2 uppercase text-sm">Noter ceci</div>
-        <div className="text-lg font-bold mb-4 text-center">{type==="movie"?clickedOne.title:clickedOne.Name}</div>
+        <div className="text-lg font-bold mb-4 text-center">{displayTitle}</div>
 
         <div className="flex justify-center mb-4">
           <Rating
@@ -410,7 +495,7 @@ const handleLike = async () => {
 
    <div className='flex w-full h-full'>
     <div className='w-1/2 pl-10'>
-     <h2 className="text-2xl font-bold">{type==="movie"?clickedOne.title:clickedOne.Name}</h2>
+     <h2 className="text-2xl font-bold">{displayTitle}</h2>
      <div className='flex mt-2'>
         <p className='text-[9px] text-gray-400'>{typeClicked==="TV"?"TV-Show":"Movie"}</p>
         <p className='text-[9px] text-gray-400 ml-1'>|</p>
@@ -422,7 +507,7 @@ const handleLike = async () => {
      </div>
      <div className='flex mt-2'>
             <p className='text-[9px] text-gray-400'>Date de sortie:</p>
-            <p className='text-[9px] text-gray-400 ml-1'>{type==="movie"?clickedOne.release_date:clickedOne.first_air_date}</p>
+            <p className='text-[9px] text-gray-400 ml-1'>{displayDate}</p>
             </div>
      <div className='flex mt-2 items-center'>
         <FontAwesomeIcon icon={faStar} className="text-lg w-5 text-yellow-300" />
@@ -480,7 +565,6 @@ const handleLike = async () => {
     </div>
     <img
       src={`https://image.tmdb.org/t/p/w500${clickedOne.poster_path}`}
-      alt={clickedOne.title}
       className="w-56 h-80 object-cover rounded-lg ml-40"
     />
 
@@ -509,10 +593,10 @@ const handleLike = async () => {
 
     {/* Liste des commentaires */}
     <div className="max-h-60 overflow-y-auto pr-2">
-        {comments.length === 0 ? (
+        {comments?.length === 0 ? (
     <p className="text-gray-400">Aucun commentaire pour le moment.</p>
     ) : (
-    comments.map((c, index) => (
+    comments?.map((c, index) => (
         <div key={index} className="flex p-3 rounded-xl h-14 mt-2 commentaire ml-2 py-2 mb-2">
          <img src={image} className="h-10 w-10 rounded-full"></img>
         <div className='flex flex-col ml-2'>
@@ -538,7 +622,7 @@ const handleLike = async () => {
   ))
 )}
     </div>
-    {(totalComments>comments.length)?<div className="flex justify-center mt-4">
+    {(totalComments>(comments?.length??0))?<div className="flex justify-center mt-4">
       <button
         className="px-4 py-2 bg-red-700 anime rounded-md"
         onClick={() => setPage((prev) => prev + 1)}

@@ -69,3 +69,19 @@ export type SectionMovies = {
 export type MoviesBySection = {
   [section: string]: SectionMovies | undefined; // section : tableau de films
 };
+export type Comment = {
+  idU: number;
+  commentText: string;
+  nom: string;
+  prenom: string;
+  idc: string;
+}
+export type genreEntity = {
+            id: number;
+            documentId: string;
+            id_genre: string;
+            nom_genre: string;
+            createdAt: string;
+            updatedAt: string;
+            publishedAt: string;
+        }  

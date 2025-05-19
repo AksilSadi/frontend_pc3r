@@ -1,7 +1,7 @@
-import { use, useEffect, useState } from 'react';
+import {  useEffect, useState } from 'react';
 import './Acceuil.css'
 import axios from "axios";
-import {Film,CommentCount,TVShow} from '../constant.ts'
+import {Film,TVShow} from '../constant.ts'
 import { Card } from './card.tsx';
 import { Navigate } from "react-router";
 import Cookies from 'js-cookie';
@@ -11,22 +11,33 @@ import Header from './header.tsx';
 import Searched from './Searched.tsx';
 import DatePicker from "react-datepicker";
 import toast from 'react-hot-toast';
+type favoritesEntity = {
+            id: number;
+            documentId: string;
+            id_media_type: string;
+            media_type: string;
+            id_user:  string;
+            createdAt: string;
+            updatedAt: string;
+            publishedAt: string;
+        }
+
 function Favorites({ refresh }: { refresh:boolean }) {
-    const [films,setFilms]=useState({});
+    const [films, setFilms] = useState<{ [page: number]: (Film | TVShow)[] }>({});
     const [page, setPage] = useState(1);
-    const [totalPages,setTotal] = useState(Math.ceil(films?.page) || 1);
+    const [totalPages,setTotal] = useState(1);
     const [clickedOne,setClicked]=useState<Film | TVShow>();
     const[typeClicked,setType]=useState("");
     const token=Cookies.get('token');
-    const[searchTerm,setSearchTerm]=useState<string>();
-    const [category,setCategory]=useState<string>();
+    const[searchTerm,setSearchTerm]=useState<string>("");
+    const [category,setCategory]=useState<string>("");
     const[loading,setLoading]=useState(false);
     const [showProfile, setShowProfile] = useState(false);
         const { user } = useUser();
-            const[nom,setNom]=useState(user.Nom_user);
-            const[prenom,setPrenom]=useState(user.Prenom_user);
-            const [dateNaissance, setDateNaissance] = useState<Date | null>(user.Date_naissance ? new Date(user.Date_naissance) : null);
-            const[email,setEmail]=useState(user.email_user);
+            const[nom,setNom]=useState(user?.Nom_user);
+            const[prenom,setPrenom]=useState(user?.Prenom_user);
+            const [dateNaissance, setDateNaissance] = useState<Date | null>(user?.Date_naissance ? new Date(user.Date_naissance) : null);
+            const[email,setEmail]=useState(user?.email_user);
             const[password,setPassword]=useState('');
             const { setUser } = useUser();
     
@@ -37,7 +48,7 @@ function Favorites({ refresh }: { refresh:boolean }) {
                 Date_naissance: dateNaissance,
                 email: email
             };
-            axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user.id}`,data, {
+            axios.put(`https://tmdb-database-strapi.onrender.com/api/users/${user?.id}`,data, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -59,10 +70,10 @@ function Favorites({ refresh }: { refresh:boolean }) {
                 console.error(error);
             }).finally(() => {
                 setShowProfile(false);
-                setNom(user.Nom_user);
-                setPrenom(user.Prenom_user);
-                setDateNaissance(user.Date_naissance ? new Date(user.Date_naissance) : null);
-                setEmail(user.email_user);
+                setNom(user?.Nom_user);
+                setPrenom(user?.Prenom_user);
+                setDateNaissance(user?.Date_naissance ? new Date(user.Date_naissance) : null);
+                setEmail(user?.email_user);
                 setPassword('');
             });
         }
@@ -81,7 +92,7 @@ function Favorites({ refresh }: { refresh:boolean }) {
 
 useEffect(() => {
     setLoading(true);
-    axios.get(`https://tmdb-database-strapi.onrender.com/api/favorites?filters[id_user][$eq]=${user.id}&pagination[page]=${page}&pagination[pageSize]=15`, {
+    axios.get(`https://tmdb-database-strapi.onrender.com/api/favorites?filters[id_user][$eq]=${user?.id}&pagination[page]=${page}&pagination[pageSize]=15`, {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -89,12 +100,12 @@ useEffect(() => {
         const { data, meta } = res.data;
         setTotal(meta.pagination.pageCount);
         // Filtrage des IDs
-        const filmIds = data.filter((item) => item.media_type==="movie").map((item) => item.id_media_type);
-        const tvIds = data.filter((item) => item.media_type==="TV").map((item) => item.id_media_type);
+        const filmIds = data.filter((item:favoritesEntity) => item.media_type==="movie").map((item:favoritesEntity) => item.id_media_type);
+        const tvIds = data.filter((item:favoritesEntity) => item.media_type==="TV").map((item:favoritesEntity) => item.id_media_type);
 
         // Génération des URL
-        const movieQuery = filmIds.map((id) => `filters[id_film][$eq]=${id}`).join('&');
-        const tvQuery = tvIds.map((id) => `filters[id_TvShow][$eq]=${id}`).join('&');
+        const movieQuery = filmIds.map((id:string) => `filters[id_film][$eq]=${id}`).join('&');
+        const tvQuery = tvIds.map((id:string) => `filters[id_TvShow][$eq]=${id}`).join('&');
 
         const moviePromise = filmIds.length
             ? axios.get(`https://tmdb-database-strapi.onrender.com/api/films?${movieQuery}`, {
@@ -129,7 +140,7 @@ const getPaginationRange = (current: number, total: number) => {
     const delta = 2; // Nombre de pages à afficher de chaque côté de la page actuelle
     const range = [];
     const rangeWithDots = [];
-    let l: number;
+    let l: number | null=null ;
 
     for (let i = 1; i <= total; i++) {
       if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
@@ -137,7 +148,7 @@ const getPaginationRange = (current: number, total: number) => {
       }
     }
 
-    for (let i of range) {
+    for (const i of range) {
       if (l) {
         if (i - l === 2) {
           rangeWithDots.push(l + 1);
@@ -189,7 +200,7 @@ const getPaginationRange = (current: number, total: number) => {
                                 </div>
                                 <div className="flex flex-col mt-3">
                                     <label className=" text-white">Mot de passe</label>
-                                    <input type="password"  className="pl-1 mt-1 h-10 rounded-lg bg-transparent border-2 border-solid  border-white outline-none focus:border-4 text-white placeholder:text-gray-300"  placeholder="************" onChange={(e)=>{
+                                    <input type="password" value={password}  className="pl-1 mt-1 h-10 rounded-lg bg-transparent border-2 border-solid  border-white outline-none focus:border-4 text-white placeholder:text-gray-300"  placeholder="************" onChange={(e)=>{
                                       setPassword(e.target.value);
                                       
                                     }}></input>
@@ -227,7 +238,7 @@ const getPaginationRange = (current: number, total: number) => {
                 setShowProfile(!showProfile);
             }}/>
         {clickedOne && typeClicked?
-            <Details type={typeClicked} clicked={clickedOne} film={searchTerm} categorie={category} />
+            <Details type={typeClicked} clicked={clickedOne} />
         
         :(searchTerm!="" && category)?
         <Searched film={searchTerm} categorie={category} />
@@ -248,10 +259,18 @@ const getPaginationRange = (current: number, total: number) => {
                         <Card
                             key={film.id}
                             film={film}
-                            type={film.id_TvShow ? "TV" : "movie"}
+                            type={"id_TvShow" in film ? "TV" : "movie"}
                             onClick={() => {
+                                let typep: string | undefined;
+                                if ("id_film" in film) {
+                                    typep = "movie";
+                                } else if ("id_TvShow" in film) {
+                                    typep = "TV";
+                                } else {
+                                    throw new Error("clickedOne ne correspond à aucun type connu");
+                                }
                                 setClicked(film);
-                                setType(film.id_TvShow ? "TV" : "movie");
+                                setType(typep);
                             }}
                         />
                     ))}
