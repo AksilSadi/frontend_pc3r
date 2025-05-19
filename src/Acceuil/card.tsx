@@ -50,9 +50,16 @@ export const Card = ({ film,type,onClick }: FilmCardProps) =>{
   }, [film]);
 
   useEffect(() => {
-    const idfilm=film.id;
+    let id: string | undefined;
+      if (type === "movie" && "id_film" in film) {
+        id = film.id_film;
+      } else if (type === "TV" && "id_TvShow" in film) {
+        id = film.id_TvShow;
+      } else {
+        throw new Error("Type ou propriétés inconnues");
+      }
     axios.get(
-            `https://tmdb-database-strapi.onrender.com/api/commentaires?filters[id_media_type][$eq]=${idfilm}&pagination[pageSize]=1`, {
+            `https://tmdb-database-strapi.onrender.com/api/commentaires?filters[id_media_type][$eq]=${id}&pagination[pageSize]=1`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }

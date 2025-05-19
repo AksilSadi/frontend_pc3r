@@ -46,7 +46,7 @@ function Details({type,clicked}:{type: string,clicked: Film | TVShow}){
     const token=Cookies.get('token');
     const [page, setPage] = useState(1);
     const [changed, setChanged] = useState(false);
-    const [comments, setComments] = useState<Comment []>();
+    const [comments, setComments] = useState<Comment []>([]);
     const[totalComments,setTotal]=useState(0);
     const [clickedOne,setClicked]=useState<Film | TVShow>(clicked);
     const[typeClicked,setType]=useState(type);
@@ -59,6 +59,11 @@ function Details({type,clicked}:{type: string,clicked: Film | TVShow}){
     const[showMenu,setShowMenu]=useState(false);
     const[averageVote,setAverageVote]=useState(clickedOne.vote_average_website);
     const[total,setTotalVote]=useState(clickedOne.vote_count_website);
+    const [loading,setLoading]=useState(false);
+    const [loadinglike,setLoadingLike]=useState(false);
+    const[loadingComment,setLoadingComment]=useState(false);
+    const[loadingAddcomment,setLoadingAddComment]=useState(false);
+    const[loadingstar,setLoadingStar]=useState(false);
     const displayTitle = type === 'movie'
   ? (clickedOne as Film).title
   : (clickedOne as TVShow).Name;
@@ -72,6 +77,7 @@ function Details({type,clicked}:{type: string,clicked: Film | TVShow}){
     const handleRateClick = async () => {
   if (note !== null) {
     try {
+      setLoadingStar(true);
       let id: string | undefined;
       if (type === "movie" && "id_film" in clickedOne) {
         id = clickedOne.id_film;
@@ -125,6 +131,8 @@ function Details({type,clicked}:{type: string,clicked: Film | TVShow}){
     } catch (err) {
       console.error(err);
       toast.error("Une erreur est survenue");
+    }finally {
+      setLoadingStar(false);
     }
 
     setIsModalOpen(false);
@@ -152,6 +160,7 @@ const handleDelete = async (id: string) => {
 
 const handleLike = async () => {
     try {
+      setLoadingLike(true);
       let id: string | undefined;
       if (type === "movie" && "id_film" in clickedOne) {
         id = clickedOne.id_film;
@@ -195,6 +204,8 @@ const handleLike = async () => {
     } catch (err) {
       console.error(err);
       toast.error("Une erreur est survenue");
+    }finally {
+      setLoadingLike(false);
     }
 }
 
@@ -316,6 +327,7 @@ const handleLike = async () => {
 
 
     useEffect(()=>{
+      setLoading(true);
       let id: string | undefined;
       if (type === "movie" && "id_film" in clickedOne) {
         id = clickedOne.id_film;
@@ -339,10 +351,14 @@ const handleLike = async () => {
         ).catch((err) => {
             console.error(`Erreur pour le genre ID ${clickedOne.genre_tv_films}:`, err);
         }
+        ).finally(()=>{
+            setLoading(false);
+        }
         )
     },[clickedOne]);
 
     useEffect(()=>{
+      setLoadingLike(true);
       let id: string | undefined;
       if (type === "movie" && "id_film" in clickedOne) {
         id = clickedOne.id_film;
@@ -363,12 +379,24 @@ const handleLike = async () => {
         ).catch((err) => {
             console.error(`Erreur pour le genre ID ${clickedOne.genre_tv_films}:`, err);
         }
+        ).finally(()=>{
+            setLoadingLike(false);
+        }
         )
     },[clickedOne]);
 
 
     useEffect(()=>{
-        axios.get(`https://tmdb-database-strapi.onrender.com/api/commentaires?filters[id_media_type][$eq]=${clickedOne.id}&filters[media_type][$eq]=${typeClicked}&pagination[page]=${page}&pagination[pageSize]=${COMMENTS_PER_PAGE}&populate=id_user`,{
+        setLoadingComment(true);
+        let id: string | undefined;
+        if (type === "movie" && "id_film" in clickedOne) {
+          id = clickedOne.id_film;
+        } else if (type === "TV" && "id_TvShow" in clickedOne) {
+          id = clickedOne.id_TvShow;
+        } else {
+          throw new Error("Type ou propriétés inconnues");
+        }
+        axios.get(`https://tmdb-database-strapi.onrender.com/api/commentaires?filters[id_media_type][$eq]=${id}&filters[media_type][$eq]=${typeClicked}&pagination[page]=${page}&pagination[pageSize]=${COMMENTS_PER_PAGE}&populate=id_user`,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -410,17 +438,29 @@ const handleLike = async () => {
         }
         }).catch((erreur)=>{
             console.log(erreur)
-        })
+        }).finally(()=>{
+            setLoadingComment(false);
+        }
+        )
     },[clickedOne,typeClicked,changed,page]);
 
     
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+         setLoadingAddComment(true);
+        let id: string | undefined;
+        if (type === "movie" && "id_film" in clickedOne) {
+          id = clickedOne.id_film;
+        } else if (type === "TV" && "id_TvShow" in clickedOne) {
+          id = clickedOne.id_TvShow;
+        } else {
+          throw new Error("Type ou propriétés inconnues");
+        }
         axios.post("https://tmdb-database-strapi.onrender.com/api/commentaires", {
 
             data: {
-                id_media_type: clickedOne.id,
+                id_media_type: id,
                 media_type: typeClicked,
                 commentaire: comment,
                 id_user: user?.id
@@ -437,7 +477,10 @@ const handleLike = async () => {
             }
         }).catch((erreur) => {
             console.log(erreur)
-        })
+        }).finally(()=>{
+            setLoadingAddComment(false);
+        }
+        )
     }
 
 
@@ -488,7 +531,14 @@ const handleLike = async () => {
             ? 'bg-gray-600 text-white opacity-50 cursor-not-allowed'
             : 'bg-yellow-400 text-black hover:bg-yellow-500 cursor-pointer'}
         `} onClick={handleRateClick} disabled={note === null}>
-          Noter
+          {loadingstar ? (
+        <>
+          <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          Chargement...
+        </>
+      ) : (
+        "Noter"
+      )}
         </button>
       </div>
     </div>
@@ -538,7 +588,8 @@ const handleLike = async () => {
      </div>
      <p className="text-[11px] mt-2 text-gray-200 leading-loose">{clickedOne.overview}</p>
         <div className="flex mt-4">
-            <div className='flex justify-between items-center'>
+            {loading?<div className="w-8 h-8 border-4 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+            :<div className='flex justify-between items-center'>
              {note!=null?<p className="text-lg text-gray-400">Ma note</p>:null}
         <div className="flex items-center px-4 py-0.5 rounded-2xl hover:bg-gray-500 group cursor-pointer" style={{ '--tw-bg-opacity': '0.2' } as React.CSSProperties} onClick={()=>setIsModalOpen(true)}>
             <FontAwesomeIcon
@@ -550,8 +601,10 @@ const handleLike = async () => {
                 />
           <p className="text-lg ml-2 text-green-400">{note===null?`Noter`:`${note}/10`}</p>
         </div>                
-            </div>
-            <div className="flex items-center px-4 py-0.5 rounded-2xl hover:bg-gray-500 group cursor-pointer" style={{ '--tw-bg-opacity': '0.2' } as React.CSSProperties} onClick={handleLike}>
+            </div>}
+            
+            {loadinglike?<div className="ml-10 w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            :<div className="flex items-center px-4 py-0.5 rounded-2xl hover:bg-gray-500 group cursor-pointer" style={{ '--tw-bg-opacity': '0.2' } as React.CSSProperties} onClick={handleLike}>
             <FontAwesomeIcon
                 icon={faHeart}
                 className={`w-5 h-5 stroke-red-600 ${
@@ -560,7 +613,7 @@ const handleLike = async () => {
                 style={{ strokeWidth: 40 }}
                 />
           <p className="text-lg ml-2 text-white">J'aime</p>
-        </div>
+        </div>}
 
 
         </div>
@@ -588,13 +641,21 @@ const handleLike = async () => {
         value={comment}
         onChange={(e) => setComment(e.target.value)}
       />
-      <button className="mt-2 px-4 py-2 bg-red-700 anime rounded-md">Publier</button>
+      <button className="mt-2 px-4 py-2 bg-red-700 anime rounded-md">{loadingAddcomment ? (
+        <>
+          <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          Chargement...
+        </>
+      ) : (
+        "Publier"
+      )}</button>
     </form>
 
      <h2 className="text-2xl font-bold mb-4">Commentaires</h2>
 
     {/* Liste des commentaires */}
-    <div className="max-h-60 overflow-y-auto pr-2">
+    {loadingComment?<div className="w-8 h-8 border-4 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+    :<div className="max-h-60 overflow-y-auto pr-2">
         {comments?.length === 0 ? (
     <p className="text-gray-400">Aucun commentaire pour le moment.</p>
     ) : (
@@ -623,7 +684,7 @@ const handleLike = async () => {
         </div>
   ))
 )}
-    </div>
+    </div>}
     {(totalComments>(comments?.length??0))?<div className="flex justify-center mt-4">
       <button
         className="px-4 py-2 bg-red-700 anime rounded-md"
